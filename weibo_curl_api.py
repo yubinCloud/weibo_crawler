@@ -32,25 +32,31 @@ class UsersShow(BaseHandler):
     @gen.coroutine
     def get(self):
         args_dict = self.args2dict()
-        assert 'user_id' in args_dict
         user_id = args_dict.get('user_id')
+
+        if user_id is None:
+            self.write()
+
         idx_curl_result = yield weibo_web_curl('users_show', user_id=user_id)  # 爬取主页的结果
 
-        idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
-        user_id = idxParser.get_user_id()  # 获取到真正的user_id
-        info_curl_result = yield weibo_web_curl('user_info', user_id=user_id)  # 爬取信息页的结果
-        infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
-        user_info = infoParser.extract_user_info()
-        user = idxParser.get_user(user_info)
-        print(user.__dict__)
+        if not idx_curl_result['error_code']:
+            idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
+            user_id = idxParser.get_user_id()  # 获取到真正的user_id
+            info_curl_result = yield weibo_web_curl('user_info', user_id=user_id)  # 爬取信息页的结果
+            if not info_curl_result['error_code']:
+                infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
+                user_info = infoParser.extract_user_info()
+                user = idxParser.get_user(user_info)
+                print(user.__dict__)
 
-        if not idx_curl_result['error_code'] and not info_curl_result['error_code']:
-            success = const.SUCCESS.copy()
-            success['data'] = {
-                'result': user.__dict__,
-                'cursor': ''
-            }
-            self.write(success)
+                success = const.SUCCESS.copy()
+                success['data'] = {
+                    'result': user.__dict__,
+                    'cursor': ''
+                }
+                self.write(success)
+            else:
+                pass
         else:
             pass
 

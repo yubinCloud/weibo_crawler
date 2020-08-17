@@ -31,9 +31,9 @@ def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, **kwargs):
             response = yield client.fetch(req)
             http_code = response.code
             if http_code == 200:
-                print(response.body.decode('utf8'))
-                print(type(response.body))
                 return {'error_code': 0, 'selector': etree.HTML(response.body)}
+            else:
+                return {'error_code': 1, 'resp': response}
         except Exception as e:
             print(e)
-            pass
+            raise e

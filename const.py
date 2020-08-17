@@ -1,3 +1,5 @@
+import logging
+
 
 # 发送一个request最多重新尝试的次数
 RETRY_TIME = 3
@@ -23,3 +25,5 @@ SUCCESS = {
     'error_msg': ''
 }
 
+# 日志
+LOGGING = logging

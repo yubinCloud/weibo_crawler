@@ -1,7 +1,8 @@
 import logging
 import sys
 
-logger = logging.getLogger('weibo.index_parser')
+from const import LOGGING
+
 
 class IndexParser:
     def __init__(self, user_id, index_selector):
@@ -34,7 +35,7 @@ class IndexParser:
             self.user.followers = int(user_info[2][3:-1])
             return self.user
         except Exception as e:
-            logger.exception(e)
+            LOGGING.exception(e)
 
     def get_page_num(self):
         """获取微博总页数"""
@@ -46,7 +47,7 @@ class IndexParser:
                                  [0].attrib['value'])
             return page_num
         except Exception as e:
-            logger.exception(e)
+            LOGGING.exception(e)
 
 
 logger2 = logging.getLogger('weibo.info_parser')  # TODO logger的定义
@@ -62,7 +63,7 @@ class InfoParser():
             nickname = self.selector.xpath('//title/text()')[0]
             nickname = nickname[:-3]
             if nickname == u'登录 - 新' or nickname == u'新浪':
-                logger.warning(u'cookie错误或已过期,请按照README中方法重新获取')
+                LOGGING.warning(u'cookie错误或已过期')
                 sys.exit()
             user.nickname = nickname
 
