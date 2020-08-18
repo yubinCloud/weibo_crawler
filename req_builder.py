@@ -45,7 +45,7 @@ if __name__ == '__main__':
         try:
             req = UserIndexReqBuilder('1669879400').make_request()
             response = http_client.fetch(req)
-            print(response.body.decode('utf8'))
+            print(response)
         except Exception as e:
             print(e)
 

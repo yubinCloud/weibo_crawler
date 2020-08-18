@@ -1,4 +1,3 @@
-import logging
 import sys
 
 from const import LOGGING
@@ -50,7 +49,6 @@ class IndexParser:
             LOGGING.exception(e)
 
 
-logger2 = logging.getLogger('weibo.info_parser')  # TODO logger的定义
 
 class InfoParser():
     def __init__(self, info_selector):
@@ -58,15 +56,14 @@ class InfoParser():
 
     def extract_user_info(self):
         """提取用户信息"""
+        user = User()
+        nickname = self.selector.xpath('//title/text()')[0]
+        nickname = nickname[:-3]
+        if nickname == u'登录 - 新' or nickname == u'新浪':
+            LOGGING.warning(u'cookie错误或已过期')
+            raise CookieInvalidException()
+        user.nickname = nickname
         try:
-            user = User()
-            nickname = self.selector.xpath('//title/text()')[0]
-            nickname = nickname[:-3]
-            if nickname == u'登录 - 新' or nickname == u'新浪':
-                LOGGING.warning(u'cookie错误或已过期')
-                sys.exit()
-            user.nickname = nickname
-
             basic_info = self.selector.xpath("//div[@class='c'][3]/text()")
             zh_list = [u'性别', u'地区', u'生日', u'简介', u'认证', u'达人']
             en_list = [
@@ -128,3 +125,12 @@ class User():
         result += u'关注数: %d\n' % self.following
         result += u'粉丝数: %d\n' % self.followers
         return result
+
+
+class CookieInvalidException(Exception):
+    """Cookie失效的异常"""
+    def __init__(self):
+        super()
+
+    def __str__(self):
+        return 'Cookie invalid.'

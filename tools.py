@@ -12,7 +12,7 @@ aim_to_builder = {
 
 
 @gen.coroutine
-def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, **kwargs):
+def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, with_cookie=True, **kwargs):
     """
     根据爬取的目标对相对应的网站发送request请求并获得response
     :param curl_aim: 爬取的目标，其值必须为aim_to_builder的keys之一
@@ -37,3 +37,10 @@ def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, **kwargs):
         except Exception as e:
             print(e)
             raise e
+
+
+def update_cookie():
+    """
+    更新cookie数据
+    """
+    pass

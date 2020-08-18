@@ -1,1 +1,1 @@
-from .index_parser import IndexParser, InfoParser
+from .index_parser import IndexParser, InfoParser, CookieInvalidException
