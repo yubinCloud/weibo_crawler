@@ -5,8 +5,8 @@ from tornado.options import define, options
 
 from selector_parser import *
 import const
-from tools import weibo_web_curl
-from weibo_curl_error import WeiboCrulError
+from tools import weibo_web_curl, curl_result_to_api_result
+from weibo_curl_error import WeiboCurlError
 
 define("port", default=8000, help="run on the given port", type=int)
 
@@ -36,7 +36,7 @@ class UsersShow(BaseHandler):
         user_id = args_dict.get('user_id')
 
         if user_id is None:  # 此时URL缺少查询参数
-            self.write(WeiboCrulError.URL_LACK_ARGS)
+            self.write(WeiboCurlError.URL_LACK_ARGS)
             return
 
         task_finished = False  # 标志此次处理任务是否完成
@@ -63,21 +63,17 @@ class UsersShow(BaseHandler):
                                 'cursor': ''
                             }
                         except AttributeError:  # user没有__dict__属性时，说明未爬取到user
-                            self.write(WeiboCrulError.URL_ARGS_ERROR)  # 报告参数错误
+                            self.write(WeiboCurlError.URL_ARGS_ERROR)  # 报告参数错误
                             return
                         self.write(success)
                         return
                     else:
-                        http_status_code = info_curl_result.get('response')
-                        error = WeiboCrulError.OTHER_RESP_ERROR.copy()
-                        error['error_msg'] += 'Http status code: {}'.format(http_status_code)
-                        self.write(error)
+                        error_res = curl_result_to_api_result(info_curl_result)
+                        self.write(error_res)
                         return
                 else:
-                    http_status_code = idx_curl_result.get('response')
-                    error = WeiboCrulError.OTHER_RESP_ERROR.copy()
-                    error['error_msg'] += 'Http status code: {}'.format(http_status_code)
-                    self.write(error)
+                    error_res = curl_result_to_api_result(idx_curl_result)
+                    self.write(error_res)
                     return
 
             except CookieInvalidException:  # Cookie无效，更新Cookie后重新开始任务

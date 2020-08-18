@@ -1,5 +1,6 @@
 import logging
 import requests
+from queue import Queue
 
 def get_account():
     """
@@ -66,16 +67,21 @@ def update_cookie():
     HEADERS_WITH_COOKIR["Cookie"] = resp.headers.get('Cookie')
 
 
-# requests的代理
-PROXY = {
-    "http": "http://144.52.244.67:9999"
-}
+# requests的代理池
+PROXY = {"http": "http://144.52.244.67:9999"}
+proxy_pool = Queue(maxsize=-1)
+
+def init_proxy_pool():
+    proxy_pool.put({"http": "http://144.52.244.67:9999"})
+
 
 def get_proxy():
     """
     获取代理
     """
-    return PROXY
+    cur_proxy = proxy_pool.get()
+    proxy_pool.put(cur_proxy)
+    return cur_proxy
 
 
 # requests的超时时长限制das

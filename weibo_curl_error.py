@@ -1,4 +1,4 @@
-class WeiboCrulError:
+class WeiboCurlError:
     """各种微博爬取过程的错误类型"""
 
     # URL缺少参数
