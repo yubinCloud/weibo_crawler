@@ -6,7 +6,6 @@ class RequestBuilder:
     def __init__(self):
         self.args = dict()
         self.url = str()
-        self.headers = const.HEADERS
         self.proxy = const.PROXY
 
     def get_url(self):
@@ -15,9 +14,10 @@ class RequestBuilder:
     def get_args(self):
         return self.args
 
-    def make_request(self, method='GET',**req_kwargs):
+    def make_request(self, method='GET',with_cookie=True, **req_kwargs):
         req = HTTPRequest(url=self.get_url(), method=method,
-                               headers=self.headers, request_timeout=const.REQUEST_TIME_OUT, **req_kwargs)
+                          headers=const.get_headers(with_cookie=with_cookie),
+                          request_timeout=const.REQUEST_TIME_OUT, **req_kwargs)
         return req
 
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
         try:
             req = UserIndexReqBuilder('1669879400').make_request()
             response = http_client.fetch(req)
-            print(response)
+            print(response.body.decode('utf8'))
         except Exception as e:
             print(e)
 

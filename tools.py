@@ -24,16 +24,17 @@ def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, with_cookie=True, **kw
     assert curl_aim in aim_to_builder.keys()  # 保证 curl_aim 属于 aim_to_builder.keys()
     client = AsyncHTTPClient()
     builder = aim_to_builder.get(curl_aim)
-    req = builder(**kwargs).make_request()  # 获得 http request
+    req = builder(**kwargs).make_request(with_cookie=with_cookie)  # 获得 http request
 
     for epoch in range(retry_time):
         try:
             response = yield client.fetch(req)
             http_code = response.code
             if http_code == 200:
+                print(response.body.decode('utf8'))
                 return {'error_code': 0, 'selector': etree.HTML(response.body)}
             else:
-                return {'error_code': 1, 'resp': response}
+                return {'error_code': 1, 'response': response}
         except Exception as e:
-            print(e)
+            const.LOGGING.error(e)
             raise e

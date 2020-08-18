@@ -6,6 +6,7 @@ from tornado.options import define, options
 from selector_parser import *
 import const
 from tools import weibo_web_curl
+from weibo_curl_error import WeiboCrulError
 
 define("port", default=8000, help="run on the given port", type=int)
 
@@ -34,36 +35,65 @@ class UsersShow(BaseHandler):
         args_dict = self.args2dict()
         user_id = args_dict.get('user_id')
 
-        if user_id is None:
-            self.write()
+        if user_id is None:  # 此时URL缺少查询参数
+            self.write(WeiboCrulError.URL_LACK_ARGS)
+            return
 
-        idx_curl_result = yield weibo_web_curl('users_show', user_id=user_id)  # 爬取主页的结果
+        task_finished = False  # 标志此次处理任务是否完成
 
-        if not idx_curl_result['error_code']:
-            idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
-            user_id = idxParser.get_user_id()  # 获取到真正的user_id
-            info_curl_result = yield weibo_web_curl('user_info', user_id=user_id)  # 爬取信息页的结果
-            if not info_curl_result['error_code']:
-                infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
-                user_info = infoParser.extract_user_info()
-                user = idxParser.get_user(user_info)
-                print(user.__dict__)
+        while not task_finished:
+            try:
+                idx_curl_result = yield weibo_web_curl('users_show', user_id=user_id)  # 爬取主页的结果
 
-                success = const.SUCCESS.copy()
-                success['data'] = {
-                    'result': user.__dict__,
-                    'cursor': ''
-                }
-                self.write(success)
-            else:
-                pass
-        else:
-            pass
+                if not idx_curl_result['error_code']:  # 如果主页http响应的状态码为200，则继续进行
+                    idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
+                    user_id = idxParser.get_user_id()  # 获取到真正的user_id
+                    info_curl_result = yield weibo_web_curl('user_info', user_id=user_id)  # 爬取信息页的结果
+                    if not info_curl_result['error_code']:
+                        infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
+                        user_info = infoParser.extract_user_info()
+                        user = idxParser.get_user(user_info)
+                        print(user.__dict__)
+
+                        success = const.SUCCESS.copy()
+
+                        try:
+                            success['data'] = {
+                                'result': user.__dict__,
+                                'cursor': ''
+                            }
+                        except AttributeError:  # user没有__dict__属性时，说明未爬取到user
+                            self.write(WeiboCrulError.URL_ARGS_ERROR)  # 报告参数错误
+                            return
+                        self.write(success)
+                        return
+                    else:
+                        http_status_code = info_curl_result.get('response')
+                        error = WeiboCrulError.OTHER_RESP_ERROR.copy()
+                        error['error_msg'] += 'Http status code: {}'.format(http_status_code)
+                        self.write(error)
+                        return
+                else:
+                    http_status_code = idx_curl_result.get('response')
+                    error = WeiboCrulError.OTHER_RESP_ERROR.copy()
+                    error['error_msg'] += 'Http status code: {}'.format(http_status_code)
+                    self.write(error)
+                    return
+
+            except CookieInvalidException:  # Cookie无效，更新Cookie后重新开始任务
+                const.update_cookie()
+                continue
+            except Exception as e:
+                const.LOGGING.error(e)
+
 
 
 
 
 class TestHandler(tornado.web.RequestHandler):
+    """
+    用来测试的接口
+    """
     @gen.coroutine
     def get(self):
         result = yield weibo_web_curl("users_show")

@@ -13,12 +13,6 @@ class WeiboCrulError:
         'error_msg': 'URL args error.'
     }
 
-    # cookie 无效
-    COOKIR_INVALID = {
-        'error_code': 2003,
-        'error_msg': 'The weibo log cookie is invalid. Please update cookie.'
-    }
-
     # 用户不存在
     USER_NOT_EXIST = {
         'error_code': 2004,
@@ -29,6 +23,12 @@ class WeiboCrulError:
     OTHER_RESP_ERROR = {
         'error_code': 2005,
         'error_msg': "Sina weibo return a error http response."
+    }
+
+    # 未知错误
+    UNKNOWN_ERROR = {
+        'error_code': 2006,
+        'error_msg': "An unknown error has occurred here."
     }
 
 

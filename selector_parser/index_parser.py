@@ -7,7 +7,6 @@ class IndexParser:
     def __init__(self, user_id, index_selector):
         self.user_id = user_id
         self.selector = index_selector
-        print(index_selector)
 
     def get_user_id(self):
         """获取用户id，使用者输入的user_id不一定是正确的，可能是个性域名等，需要获取真正的user_id"""

@@ -68,7 +68,7 @@ def update_cookie():
 
 # requests的代理
 PROXY = {
-    "http": "http://36.249.119.57:9999"
+    "http": "http://144.52.244.67:9999"
 }
 
 def get_proxy():
@@ -85,7 +85,7 @@ REQUEST_TIME_OUT = 10
 SUCCESS = {
     'error_code': 0,
     'data': None,
-    'error_msg': ''
+    'error_msg': None
 }
 
 # 日志
