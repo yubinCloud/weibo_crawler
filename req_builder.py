@@ -35,6 +35,13 @@ class UserInfoReqBuilder(RequestBuilder):
         self.url = 'https://weibo.cn/{}/info'.format(user_id)
 
 
+class UserWeiboPageReqBuilder(RequestBuilder):
+    """根据用户id构造用户的某一页微博的URL"""
+    def __init__(self, user_id, page_num=1):
+        super().__init__()
+        self.url = 'https://weibo.cn/{}?page={}'.format(user_id, page_num)
+
+
 
 if __name__ == '__main__':
     from tornado import gen

@@ -24,7 +24,7 @@ class BaseHandler(tornado.web.RequestHandler):
         return input_dict
 
 
-class UsersShow(BaseHandler):
+class UsersShowHandler(BaseHandler):
     """
     API: 用户展示接口
     根据用户id搜索用户
@@ -83,7 +83,12 @@ class UsersShow(BaseHandler):
                 const.LOGGING.error(e)
 
 
-
+class UserTimelineHandler(BaseHandler):
+    """
+    API: 用户时间线接口
+    根据用户id搜索用户的微博
+    route: /weibo_curl/api/statuses_user_timeline
+    """
 
 
 class TestHandler(tornado.web.RequestHandler):
@@ -98,9 +103,13 @@ class TestHandler(tornado.web.RequestHandler):
 
 
 if __name__ == '__main__':
+    ROUTE_PREFIX = r"/weibo_curl/api/"  # 路由前缀
+
     app = tornado.web.Application([
-        (r"/weibo_curl/api/users_show", UsersShow),
+        (ROUTE_PREFIX + r"users_show", UsersShowHandler),
+        (ROUTE_PREFIX + r"statuses_user_timeline", UserTimelineHandler)
     ])
+
     http_server = tornado.httpserver.HTTPServer(app)
     http_server.listen(options.port)
     tornado.ioloop.IOLoop.instance().start()

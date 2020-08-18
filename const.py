@@ -85,7 +85,7 @@ def get_proxy():
 
 
 # requests的超时时长限制das
-REQUEST_TIME_OUT = 10
+REQUEST_TIME_OUT = 3
 
 # 爬取结果正确时返回结果的格式
 SUCCESS = {
