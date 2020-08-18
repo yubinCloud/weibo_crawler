@@ -37,10 +37,3 @@ def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, with_cookie=True, **kw
         except Exception as e:
             print(e)
             raise e
-
-
-def update_cookie():
-    """
-    更新cookie数据
-    """
-    pass
