@@ -19,22 +19,23 @@ class PageParser:
         self.filter = filter  # 值为1代表爬取全部原创微博，0代表爬取全部微博（原创+转发）
 
     @gen.coroutine
-    def get_one_page(self, weibo_id_list):
+    def get_one_page(self):
         """获取第page页的全部微博"""
+        weibo_id_list = list()  # 存储微博的id
+        weibos = list()         # 存储所有微博的信息
         try:
             all_weibo_info = self.selector.xpath("//div[@class='c']")
             is_exist = all_weibo_info[0].xpath("div/span[@class='ctt']")
-            weibos = []
             if is_exist:
                 for i in range(0, len(all_weibo_info) - 2):
                     weibo = yield self.get_one_weibo(all_weibo_info[i])
                     if weibo:
-                        if weibo.id in weibo_id_list:
+                        if weibo.weibo_id in weibo_id_list:
                             continue
                         LOGGING.info(weibo)
                         LOGGING.info('-' * 100)
                         weibos.append(weibo)
-                        weibo_id_list.append(weibo.id)
+                        weibo_id_list.append(weibo.weibo_id)
             return weibos, weibo_id_list
         except Exception as e:
             print(e)
@@ -59,7 +60,7 @@ class PageParser:
                 wb_content = yield CommentParser(weibo_id).get_long_weibo()
                 if wb_content:
                     weibo_content = wb_content
-            return weibo_content
+            return dict(weibo_content=weibo_content)
         except Exception as e:
             LOGGING.exception(e)
 
@@ -82,15 +83,22 @@ class PageParser:
             retweet_reason = retweet_reason[:retweet_reason.rindex(u'赞')]
             # 提取原始用户
             original_user = info.xpath("div/span[@class='cmt']/a/text()")
+
+            content_info = None  # 微博内容信息
             if original_user:
                 original_user = original_user[0]
-                weibo_content = (retweet_reason + '\n' + u'原始用户: ' +
-                                 original_user + '\n' + u'转发内容: ' +
-                                 weibo_content)
+                content_info = {
+                    'retweet_reason': retweet_reason,   # 转发理由
+                    'original_user': original_user,     # 原始用户名
+                    'weibo_content': weibo_content      # 转发内容
+                }
             else:
-                weibo_content = (retweet_reason + '\n' + u'转发内容: ' +
-                                 weibo_content)
-            return weibo_content
+                content_info = {
+                    'retweet_reason': retweet_reason,  # 转发理由
+                    'original_user': None,  # 原始用户名
+                    'weibo_content': weibo_content  # 转发内容
+                }
+            return content_info
         except Exception as e:
             LOGGING.exception(e)
 
@@ -100,10 +108,10 @@ class PageParser:
         try:
             weibo_id = info.xpath('@id')[0][2:]
             if is_original:
-                weibo_content = yield self.get_original_weibo(info, weibo_id)
+                weibo_content_info = yield self.get_original_weibo(info, weibo_id)
             else:
-                weibo_content = yield self.get_retweet(info, weibo_id)
-            return weibo_content
+                weibo_content_info = yield self.get_retweet(info, weibo_id)
+            return weibo_content_info
         except Exception as e:
             LOGGING.exception(e)
 
@@ -217,7 +225,7 @@ class PageParser:
                 original_pictures = yield self.extract_picture_urls(info, weibo_id)
                 picture_urls['original_pictures'] = original_pictures
                 if not self.filter:
-                    picture_urls['retweet_pictures'] = u'无'
+                    picture_urls['retweet_pictures'] = list()
             else:
                 retweet_url = info.xpath("div/a[@class='cc']/@href")[0]
                 retweet_id = retweet_url.split('/')[-1].split('?')[0]
@@ -278,7 +286,7 @@ class PageParser:
             weibo.user_id = self.user_id
             is_original = self.is_original(info)
             if (not self.filter) or is_original:
-                weibo.id = info.xpath('@id')[0][2:]
+                weibo.weibo_id = info.xpath('@id')[0][2:]
                 weibo.content = yield self.get_weibo_content(info,
                                                        is_original)  # 微博内容
                 weibo.article_url = self.get_article_url(info)  # 头条文章url
@@ -312,7 +320,7 @@ class PageParser:
             a_list = info.xpath('div/a/@href')
             first_pic = 'https://weibo.cn/mblog/pic/' + weibo_id
             all_pic = 'https://weibo.cn/mblog/picAll/' + weibo_id
-            picture_urls = u'无'
+            picture_urls = list()
             if first_pic in ''.join(a_list):
                 if all_pic in ''.join(a_list):
                     mblog_picall_curl_result = yield weibo_web_curl('mblog_pic_all', weibo_id=weibo_id)
@@ -320,11 +328,10 @@ class PageParser:
                     if not mblog_picall_curl_result['error_code']:
                         mblogPicAllParser = MblogPicAllParser(mblog_picall_curl_result['selector'])
                     preview_picture_list = mblogPicAllParser.extract_preview_picture_list()
-                    picture_list = [
+                    picture_urls = [
                         p.replace('/thumb180/', '/large/')
                         for p in preview_picture_list
                     ]
-                    picture_urls = ','.join(picture_list)
                 else:
                     if info.xpath('.//img/@src'):
                         for link in info.xpath('div/a'):
@@ -333,8 +340,7 @@ class PageParser:
                                     if len(link.xpath('img/@src')) > 0:
                                         preview_picture = link.xpath(
                                             'img/@src')[0]
-                                        picture_urls = preview_picture.replace(
-                                            '/wap180/', '/large/')
+                                        picture_urls = [preview_picture.replace('/wap180/', '/large/')]
                                         break
                     else:
                         LOGGING.warning(
@@ -397,7 +403,7 @@ class MblogPicAllParser:
 class Weibo:
     """一条微博的信息"""
     def __init__(self):
-        self.id = ''
+        self.weibo_id = ''
         self.user_id = ''
 
         self.content = ''
@@ -425,5 +431,5 @@ class Weibo:
         result += u'点赞数：%d\n' % self.up_num
         result += u'转发数：%d\n' % self.retweet_num
         result += u'评论数：%d\n' % self.comment_num
-        result += u'url：https://weibo.cn/comment/%s\n' % self.id
+        result += u'url：https://weibo.cn/comment/%s\n' % self.weibo_id
         return result

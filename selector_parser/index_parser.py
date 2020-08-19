@@ -25,7 +25,7 @@ class IndexParser:
         self.user = user_info
         try:
             user_info = self.selector.xpath("//div[@class='tip2']/*/text()")
-            self.user.id = self.user_id
+            self.user.weibo_id = self.user_id
             self.user.weibo_num = int(user_info[0][3:-1])
             self.user.following = int(user_info[1][3:-1])
             self.user.followers = int(user_info[2][3:-1])

@@ -107,7 +107,7 @@ class UserTimelineHandler(BaseHandler):
             pageParser = PageParser(user_id, page_curl_result['selector'], filter)
         else:
             self.write(curl_result_to_api_result(page_curl_result))
-        weibos, weibo_id_list = yield pageParser.get_one_page([])
+        weibos, weibo_id_list = yield pageParser.get_one_page()
 
         for weibo in weibos:
             print(weibo.__dict__)
