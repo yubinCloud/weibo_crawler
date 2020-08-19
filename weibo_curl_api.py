@@ -106,7 +106,10 @@ class UserTimelineHandler(BaseHandler):
         if not page_curl_result['error_code']:
             pageParser = PageParser(user_id, page_curl_result['selector'], filter)
         weibos, weibo_id_list = pageParser.get_one_page([])
-        print(weibos)
+
+        for weibo in weibos:
+            print(weibo.__dict__)
+
         print(weibo_id_list)
 
 

@@ -18,7 +18,6 @@ class PageParser:
         self.selector = selector
         self.filter = filter  # 值为1代表爬取全部原创微博，0代表爬取全部微博（原创+转发）
 
-    @gen.coroutine
     def get_one_page(self, weibo_id_list):
         """获取第page页的全部微博"""
         try:
@@ -37,6 +36,7 @@ class PageParser:
                         weibo_id_list.append(weibo.id)
             return weibos, weibo_id_list
         except Exception as e:
+            print(e)
             LOGGING.exception(e)
 
     def is_original(self, info):
@@ -72,7 +72,7 @@ class PageParser:
             weibo_content = weibo_content[:weibo_content.rfind(u'赞')]
             a_text = info.xpath('div//a/text()')
             if u'全文' in a_text:
-                wb_content = CommentParser(weibo_id).get_long_retweet()
+                wb_content = yield CommentParser(weibo_id).get_long_retweet()
                 if wb_content:
                     weibo_content = wb_content
             retweet_reason = utils.handle_garbled(info.xpath('div')[-1])
@@ -90,7 +90,6 @@ class PageParser:
         except Exception as e:
             LOGGING.exception(e)
 
-    @gen.coroutine
     def get_weibo_content(self, info, is_original):
         """获取微博内容"""
         try:
@@ -265,7 +264,6 @@ class PageParser:
         else:
             return False
 
-    @gen.coroutine
     def get_one_weibo(self, info):
         """获取一条微博的全部信息"""
         try:
@@ -373,7 +371,7 @@ class CommentParser:
     def get_long_retweet(self):
         """获取长转发微博"""
         try:
-            wb_content = self.get_long_weibo()
+            wb_content = yield self.get_long_weibo()
             weibo_content = wb_content[:wb_content.rfind(u'原文转发')]
             return weibo_content
         except Exception as e:
