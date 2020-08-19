@@ -18,15 +18,16 @@ class PageParser:
         self.selector = selector
         self.filter = filter  # 值为1代表爬取全部原创微博，0代表爬取全部微博（原创+转发）
 
+    @gen.coroutine
     def get_one_page(self, weibo_id_list):
         """获取第page页的全部微博"""
         try:
-            info = self.selector.xpath("//div[@class='c']")
-            is_exist = info[0].xpath("div/span[@class='ctt']")
+            all_weibo_info = self.selector.xpath("//div[@class='c']")
+            is_exist = all_weibo_info[0].xpath("div/span[@class='ctt']")
             weibos = []
             if is_exist:
-                for i in range(0, len(info) - 2):
-                    weibo = self.get_one_weibo(info[i])
+                for i in range(0, len(all_weibo_info) - 2):
+                    weibo = yield self.get_one_weibo(all_weibo_info[i])
                     if weibo:
                         if weibo.id in weibo_id_list:
                             continue
@@ -55,7 +56,7 @@ class PageParser:
             weibo_content = weibo_content[:weibo_content.rfind(u'赞')]
             a_text = info.xpath('div//a/text()')
             if u'全文' in a_text:
-                wb_content = CommentParser(weibo_id).get_long_weibo()
+                wb_content = yield CommentParser(weibo_id).get_long_weibo()
                 if wb_content:
                     weibo_content = wb_content
             return weibo_content
@@ -70,13 +71,16 @@ class PageParser:
             weibo_content = weibo_content[weibo_content.find(':') +
                                           1:weibo_content.rfind(u'赞')]
             weibo_content = weibo_content[:weibo_content.rfind(u'赞')]
+            # 检查当前是否已经为全部微博内容
             a_text = info.xpath('div//a/text()')
             if u'全文' in a_text:
                 wb_content = yield CommentParser(weibo_id).get_long_retweet()
                 if wb_content:
                     weibo_content = wb_content
+            # 提取转发理由
             retweet_reason = utils.handle_garbled(info.xpath('div')[-1])
             retweet_reason = retweet_reason[:retweet_reason.rindex(u'赞')]
+            # 提取原始用户
             original_user = info.xpath("div/span[@class='cmt']/a/text()")
             if original_user:
                 original_user = original_user[0]
@@ -90,14 +94,15 @@ class PageParser:
         except Exception as e:
             LOGGING.exception(e)
 
+    @gen.coroutine
     def get_weibo_content(self, info, is_original):
         """获取微博内容"""
         try:
             weibo_id = info.xpath('@id')[0][2:]
             if is_original:
-                weibo_content = self.get_original_weibo(info, weibo_id)
+                weibo_content = yield self.get_original_weibo(info, weibo_id)
             else:
-                weibo_content = self.get_retweet(info, weibo_id)
+                weibo_content = yield self.get_retweet(info, weibo_id)
             return weibo_content
         except Exception as e:
             LOGGING.exception(e)
@@ -202,20 +207,21 @@ class PageParser:
         except Exception as e:
             LOGGING.exception(e)
 
+    @gen.coroutine
     def get_picture_urls(self, info, is_original):
         """获取微博原始图片url"""
         try:
             weibo_id = info.xpath('@id')[0][2:]
             picture_urls = {}
             if is_original:
-                original_pictures = self.extract_picture_urls(info, weibo_id)
+                original_pictures = yield self.extract_picture_urls(info, weibo_id)
                 picture_urls['original_pictures'] = original_pictures
                 if not self.filter:
                     picture_urls['retweet_pictures'] = u'无'
             else:
                 retweet_url = info.xpath("div/a[@class='cc']/@href")[0]
                 retweet_id = retweet_url.split('/')[-1].split('?')[0]
-                retweet_pictures = self.extract_picture_urls(info, retweet_id)
+                retweet_pictures = yield self.extract_picture_urls(info, retweet_id)
                 picture_urls['retweet_pictures'] = retweet_pictures
                 a_list = info.xpath('div[last()]/a/@href')
                 original_picture = u'无'
@@ -264,17 +270,19 @@ class PageParser:
         else:
             return False
 
+    @gen.coroutine
     def get_one_weibo(self, info):
         """获取一条微博的全部信息"""
         try:
             weibo = Weibo()
+            weibo.user_id = self.user_id
             is_original = self.is_original(info)
             if (not self.filter) or is_original:
                 weibo.id = info.xpath('@id')[0][2:]
-                weibo.content = self.get_weibo_content(info,
+                weibo.content = yield self.get_weibo_content(info,
                                                        is_original)  # 微博内容
                 weibo.article_url = self.get_article_url(info)  # 头条文章url
-                picture_urls = self.get_picture_urls(info, is_original)
+                picture_urls = yield self.get_picture_urls(info, is_original)
                 weibo.original_pictures = picture_urls[
                     'original_pictures']  # 原创图片url
                 if not self.filter:

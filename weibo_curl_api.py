@@ -105,12 +105,26 @@ class UserTimelineHandler(BaseHandler):
         pageParser = None
         if not page_curl_result['error_code']:
             pageParser = PageParser(user_id, page_curl_result['selector'], filter)
-        weibos, weibo_id_list = pageParser.get_one_page([])
+        else:
+            self.write(curl_result_to_api_result(page_curl_result))
+        weibos, weibo_id_list = yield pageParser.get_one_page([])
 
         for weibo in weibos:
             print(weibo.__dict__)
 
         print(weibo_id_list)
+
+        success = const.SUCCESS.copy()
+        try:
+            success['data'] = {
+                'result': [weibo.__dict__ for weibo in weibos],
+                'cursor': str(cursor + 1)
+            }
+        except AttributeError:  # user没有__dict__属性时，说明未爬取到user
+            self.write(WeiboCurlError.URL_ARGS_ERROR)  # 报告参数错误
+            return
+        self.write(success)
+        return
 
 
 
