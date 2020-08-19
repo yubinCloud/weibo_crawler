@@ -1,5 +1,3 @@
-import sys
-
 from const import LOGGING
 
 
@@ -49,7 +47,7 @@ class IndexParser:
 
 
 
-class InfoParser():
+class InfoParser:
     def __init__(self, info_selector):
         self.selector = info_selector
 

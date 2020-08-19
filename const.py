@@ -68,7 +68,7 @@ def update_cookie():
 
 
 # requests的代理池
-PROXY = {"http": "http://144.52.244.67:9999"}
+PROXY = {"http": "http://171.35.167.225:9999"}
 proxy_pool = Queue(maxsize=-1)
 
 def init_proxy_pool():
@@ -85,7 +85,7 @@ def get_proxy():
 
 
 # requests的超时时长限制das
-REQUEST_TIME_OUT = 3
+REQUEST_TIME_OUT = 10
 
 # 爬取结果正确时返回结果的格式
 SUCCESS = {

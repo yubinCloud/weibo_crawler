@@ -42,6 +42,18 @@ class UserWeiboPageReqBuilder(RequestBuilder):
         self.url = 'https://weibo.cn/{}?page={}'.format(user_id, page_num)
 
 
+class WeiboCommentReqBuilder(RequestBuilder):
+    """根据weibo_id获取该微博的评论URL"""
+    def __init__(self, weibo_id):
+        super().__init__()
+        self.url = 'https://weibo.cn/comment/' + weibo_id
+
+
+class MblogPicAllReqBuilder(RequestBuilder):
+    def __init__(self, weibo_id):
+        super().__init__()
+        self.url = 'https://weibo.cn/mblog/picAll/' + weibo_id + '?rl=1'
+
 
 if __name__ == '__main__':
     from tornado import gen

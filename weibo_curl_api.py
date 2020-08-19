@@ -5,7 +5,7 @@ from tornado.options import define, options
 
 from selector_parser import *
 import const
-from tools import weibo_web_curl, curl_result_to_api_result
+from web_curl import weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError
 
 define("port", default=8000, help="run on the given port", type=int)
@@ -26,28 +26,25 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class UsersShowHandler(BaseHandler):
     """
-    API: 用户展示接口
-    根据用户id搜索用户
+    API: 用户展示接口：根据用户id搜索用户
     routing path: /weibo_curl/api/users_show
     """
     @gen.coroutine
     def get(self):
         args_dict = self.args2dict()
         user_id = args_dict.get('user_id')
-
         if user_id is None:  # 此时URL缺少查询参数
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
 
         task_finished = False  # 标志此次处理任务是否完成
-
         while not task_finished:
             try:
                 idx_curl_result = yield weibo_web_curl('users_show', user_id=user_id)  # 爬取主页的结果
-
                 if not idx_curl_result['error_code']:  # 如果主页http响应的状态码为200，则继续进行
                     idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
                     user_id = idxParser.get_user_id()  # 获取到真正的user_id
+
                     info_curl_result = yield weibo_web_curl('user_info', user_id=user_id)  # 爬取信息页的结果
                     if not info_curl_result['error_code']:
                         infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
@@ -56,7 +53,6 @@ class UsersShowHandler(BaseHandler):
                         print(user.__dict__)
 
                         success = const.SUCCESS.copy()
-
                         try:
                             success['data'] = {
                                 'result': user.__dict__,
@@ -89,6 +85,30 @@ class UserTimelineHandler(BaseHandler):
     根据用户id搜索用户的微博
     route: /weibo_curl/api/statuses_user_timeline
     """
+    @gen.coroutine
+    def get(self):
+        args_dict = self.args2dict()
+        user_id = args_dict.get('user_id')
+        if user_id is None:  # 此时缺少参数
+            self.write(WeiboCurlError.URL_LACK_ARGS)
+            return
+        cursor = args_dict.get('cursor')
+        if cursor is None:
+            cursor = 1
+        else:
+            cursor = int(cursor)
+        filter = args_dict.get('filter')
+        if filter is None:
+            filter = 0  # 默认爬取全部微博（原创+转发）
+
+        page_curl_result = yield weibo_web_curl('user_weibo_page', user_id=user_id, page_num=cursor)
+        pageParser = None
+        if not page_curl_result['error_code']:
+            pageParser = PageParser(user_id, page_curl_result['selector'], filter)
+        weibos, weibo_id_list = pageParser.get_one_page([])
+        print(weibos)
+        print(weibo_id_list)
+
 
 
 class TestHandler(tornado.web.RequestHandler):

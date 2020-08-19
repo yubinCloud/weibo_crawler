@@ -1,6 +1,7 @@
 from tornado import gen
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from lxml import etree
+from enum import Enum
 
 import const
 import req_builder
@@ -9,6 +10,9 @@ from weibo_curl_error import WeiboCurlError
 aim_to_builder = {
     'users_show': req_builder.UserIndexReqBuilder,
     'user_info': req_builder.UserInfoReqBuilder,
+    'user_weibo_page': req_builder.UserWeiboPageReqBuilder,
+    'weibo_comment': req_builder.WeiboCommentReqBuilder,
+    'mblog_pic_all': req_builder.MblogPicAllReqBuilder,
 }
 
 
