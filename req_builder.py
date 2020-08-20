@@ -4,15 +4,11 @@ from tornado.httpclient import HTTPRequest
 class RequestBuilder:
     """用以根据参数构造出request的相关信息"""
     def __init__(self):
-        self.args = dict()
         self.url = str()
         self.proxy = const.PROXY
 
     def get_url(self):
         return self.url
-
-    def get_args(self):
-        return self.args
 
     def make_request(self, method='GET',with_cookie=True, **req_kwargs):
         req = HTTPRequest(url=self.get_url(), method=method,
@@ -50,9 +46,18 @@ class WeiboCommentReqBuilder(RequestBuilder):
 
 
 class MblogPicAllReqBuilder(RequestBuilder):
+    """微博所有图片的URL"""
     def __init__(self, weibo_id):
         super().__init__()
         self.url = 'https://weibo.cn/mblog/picAll/' + weibo_id + '?rl=1'
+
+
+class FollowReqBuilder(RequestBuilder):
+    """一个用户关注的人的URL"""
+    def __init__(self, user_id, page_num=1):
+        super().__init__()
+        self.url = 'https://weibo.cn/{}/follow?page={}'.format(user_id, page_num)
+
 
 
 if __name__ == '__main__':

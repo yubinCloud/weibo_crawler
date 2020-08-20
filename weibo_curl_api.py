@@ -6,7 +6,7 @@ from tornado.options import define, options
 from selector_parser import *
 import const
 from selector_parser import CommentParser
-from web_curl import weibo_web_curl, curl_result_to_api_result
+from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError
 
 define("port", default=8000, help="run on the given port", type=int)
@@ -41,12 +41,12 @@ class UsersShowHandler(BaseHandler):
         task_finished = False  # 标志此次处理任务是否完成
         while not task_finished:
             try:
-                idx_curl_result = yield weibo_web_curl('users_show', user_id=user_id)  # 爬取主页的结果
+                idx_curl_result = yield weibo_web_curl(Aim.users_show, user_id=user_id)  # 爬取主页的结果
                 if not idx_curl_result['error_code']:  # 如果主页http响应的状态码为200，则继续进行
                     idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
                     user_id = idxParser.get_user_id()  # 获取到真正的user_id
 
-                    info_curl_result = yield weibo_web_curl('user_info', user_id=user_id)  # 爬取信息页的结果
+                    info_curl_result = yield weibo_web_curl(Aim.users_info, user_id=user_id)  # 爬取信息页的结果
                     if not info_curl_result['error_code']:
                         infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
                         user_info = infoParser.extract_user_info()
@@ -93,16 +93,11 @@ class UserTimelineHandler(BaseHandler):
         if user_id is None:  # 此时缺少参数
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
-        cursor = args_dict.get('cursor')
-        if cursor is None:
-            cursor = 1
-        else:
-            cursor = int(cursor)
-        filter = args_dict.get('filter')
-        if filter is None:
-            filter = 0  # 默认爬取全部微博（原创+转发）
+        cursor = args_dict.get('cursor', 1)
+        cursor = int(cursor)
+        filter = args_dict.get('filter', 0)  # 默认爬取全部微博（原创+转发）
 
-        page_curl_result = yield weibo_web_curl('user_weibo_page', user_id=user_id, page_num=cursor)
+        page_curl_result = yield weibo_web_curl(Aim.users_weibo_page, user_id=user_id, page_num=cursor)
         pageParser = None
         if not page_curl_result['error_code']:
             pageParser = PageParser(user_id, page_curl_result['selector'], filter)
@@ -144,7 +139,7 @@ class StatusesShowHandler(BaseHandler):
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
 
-        comment_curl_result = yield weibo_web_curl('weibo_comment', weibo_id=weibo_id)
+        comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=weibo_id)
         if not comment_curl_result['error_code']:
             self.selector = comment_curl_result['selector']
         else:
@@ -165,11 +160,14 @@ class StatusesShowHandler(BaseHandler):
 
             success = const.SUCCESS.copy()
             success['data'] = {
-                'weibo_id': weibo_id,
-                'user_id': user_id,
-                'user_name': user_name,
-                'original': is_original,
-                'weibo_content': weibo_content
+                'result': {
+                    'weibo_id': weibo_id,
+                    'user_id': user_id,
+                    'user_name': user_name,
+                    'original': is_original,
+                    'weibo_content': weibo_content
+                },
+                'cursor': ''
             }
             print(success)
             self.write(success)
@@ -177,6 +175,31 @@ class StatusesShowHandler(BaseHandler):
         except Exception as e:
             self.write(WeiboCurlError.UNKNOWN_ERROR)
             const.LOGGING.error(e)
+
+
+class FriendsHandler(BaseHandler):
+    """
+    用户朋友列表接口(朋友指关注的人)
+        说明：根据用户id搜索用户朋友，同时也要返回他们的信息
+        路由：/weibo_curl/api/friends_list
+    """
+    @gen.coroutine
+    def get(self):
+        # 获取查询参数
+        args_dict = self.args2dict()
+        user_id, page_num = args_dict.get('user_id'), args_dict.get('page_num', 1)
+        if user_id is None:
+            self.write(WeiboCurlError.URL_LACK_ARGS)
+            return
+        # 进行爬取
+        follow_curl_result = yield weibo_web_curl(Aim.follow, user_id, page_num)
+        if not follow_curl_result['error_code']:
+            self.selector = follow_curl_result['selector']
+        else:
+            error_res = curl_result_to_api_result(follow_curl_result)
+            self.write(error_res)
+            return
+        # 构建解析器
 
 
 

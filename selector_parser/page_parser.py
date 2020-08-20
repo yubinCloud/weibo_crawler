@@ -9,7 +9,7 @@ import requests
 
 import utils
 from const import LOGGING
-from web_curl import weibo_web_curl
+from web_curl import Aim, weibo_web_curl
 import const
 
 
@@ -324,7 +324,7 @@ class PageParser:
             picture_urls = list()
             if first_pic in ''.join(a_list):
                 if all_pic in ''.join(a_list):
-                    mblog_picall_curl_result = yield weibo_web_curl('mblog_pic_all', weibo_id=weibo_id)
+                    mblog_picall_curl_result = yield weibo_web_curl(Aim.mblog_pic_all, weibo_id=weibo_id)
                     mblogPicAllParser = None
                     if not mblog_picall_curl_result['error_code']:
                         mblogPicAllParser = MblogPicAllParser(mblog_picall_curl_result['selector'])
@@ -410,7 +410,7 @@ class CommentParser:
         try:
             for i in range(5):
                 if self.selector is None or i != 0:  # 当selector为空时进行爬取网页
-                    comment_curl_result = yield weibo_web_curl('weibo_comment', weibo_id=self.weibo_id)
+                    comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=self.weibo_id)
                     if not comment_curl_result['error_code']:
                         self.selector = comment_curl_result['selector']
                     else:
