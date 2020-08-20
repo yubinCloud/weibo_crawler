@@ -1,14 +1,16 @@
 from tornado import gen
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from lxml import etree
-from enum import Enum, auto
+from enum import Enum, auto, unique
 
 import const
 import req_builder
 from weibo_curl_error import WeiboCurlError
 
 
+@unique  # 确保枚举值唯一
 class Aim(Enum):
+    """枚举全部爬取目标"""
     users_show = auto()
     users_info = auto()
     users_weibo_page = auto()
@@ -17,7 +19,7 @@ class Aim(Enum):
     follow = auto()
 
 
-aim_to_builder = {
+aim_to_builder = {  # 将爬取目标对应到相符合的请求构造器
     Aim.users_show: req_builder.UserIndexReqBuilder,
     Aim.users_info: req_builder.UserInfoReqBuilder,
     Aim.users_weibo_page: req_builder.UserWeiboPageReqBuilder,

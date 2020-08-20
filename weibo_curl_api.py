@@ -187,12 +187,15 @@ class FriendsHandler(BaseHandler):
     def get(self):
         # 获取查询参数
         args_dict = self.args2dict()
-        user_id, page_num = args_dict.get('user_id'), args_dict.get('page_num', 1)
+        user_id, cursor = args_dict.get('user_id'), args_dict.get('cursor', '1')
         if user_id is None:
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
+        if len(cursor) == 0:
+            cursor = 1
+        cursor = int(cursor)
         # 进行爬取
-        follow_curl_result = yield weibo_web_curl(Aim.follow, user_id, page_num)
+        follow_curl_result = yield weibo_web_curl(Aim.follow, user_id=user_id, page_num=cursor)
         if not follow_curl_result['error_code']:
             self.selector = follow_curl_result['selector']
         else:
@@ -200,6 +203,31 @@ class FriendsHandler(BaseHandler):
             self.write(error_res)
             return
         # 构建解析器
+        followParser = FollowParser(self.selector)
+        # 提取相关信息并返回结果
+        try:
+            follow_list = followParser.get_follows()  # 关注者的列表
+            max_page_num = followParser.get_max_page_num()  # 总页数
+            if cursor < max_page_num:
+                cursor = str(cursor + 1)
+            success = const.SUCCESS.copy()
+            success['data'] = {
+                'result': {
+                    'friend_list': follow_list,
+                    'max_page_num': max_page_num
+                },
+                'cursor': cursor
+            }
+            print(success)
+            self.write(success)
+            return
+        except Exception as e:
+            const.LOGGING.error(e)
+            print(e)
+
+
+
+
 
 
 
@@ -226,7 +254,8 @@ if __name__ == '__main__':
     app = tornado.web.Application([
         (ROUTE_PREFIX + r"users_show", UsersShowHandler),
         (ROUTE_PREFIX + r"statuses_user_timeline", UserTimelineHandler),
-        (ROUTE_PREFIX + r"statuses_show", StatusesShowHandler)
+        (ROUTE_PREFIX + r"statuses_show", StatusesShowHandler),
+        (ROUTE_PREFIX + r"friends_list", FriendsHandler),
     ])
 
     http_server = tornado.httpserver.HTTPServer(app)
