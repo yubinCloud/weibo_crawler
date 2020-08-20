@@ -5,6 +5,7 @@ from tornado.options import define, options
 
 from selector_parser import *
 import const
+from selector_parser import CommentParser
 from web_curl import weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError
 
@@ -106,7 +107,9 @@ class UserTimelineHandler(BaseHandler):
         if not page_curl_result['error_code']:
             pageParser = PageParser(user_id, page_curl_result['selector'], filter)
         else:
-            self.write(curl_result_to_api_result(page_curl_result))
+            error_res = curl_result_to_api_result(page_curl_result)
+            self.write(error_res)
+            return
         weibos, weibo_id_list = yield pageParser.get_one_page()
 
         for weibo in weibos:
@@ -127,6 +130,61 @@ class UserTimelineHandler(BaseHandler):
         return
 
 
+class StatusesShowHandler(BaseHandler):
+    """
+    推文展示接口
+    说明：根据推文id搜索推文
+    路由：/weibo_curl/api/statuses_show
+    """
+    @gen.coroutine
+    def get(self):
+        args_dict = self.args2dict()
+        weibo_id = args_dict.get('weibo_id')
+        if weibo_id is None:
+            self.write(WeiboCurlError.URL_LACK_ARGS)
+            return
+
+        comment_curl_result = yield weibo_web_curl('weibo_comment', weibo_id=weibo_id)
+        if not comment_curl_result['error_code']:
+            self.selector = comment_curl_result['selector']
+        else:
+            error_res = curl_result_to_api_result(comment_curl_result)
+            self.write(error_res)
+            return
+
+        commonParser = CommentParser(weibo_id, selector=self.selector)
+
+        try:
+            is_original = commonParser.is_original()
+            if is_original:
+                weibo_content = yield commonParser.get_long_weibo()
+            else:
+                weibo_content = yield commonParser.get_long_retweet(rev_type=dict)
+
+            user_id, user_name = commonParser.get_user()
+
+            success = const.SUCCESS.copy()
+            success['data'] = {
+                'weibo_id': weibo_id,
+                'user_id': user_id,
+                'user_name': user_name,
+                'original': is_original,
+                'weibo_content': weibo_content
+            }
+            print(success)
+            self.write(success)
+            return
+        except Exception as e:
+            self.write(WeiboCurlError.UNKNOWN_ERROR)
+            const.LOGGING.error(e)
+
+
+
+
+
+
+
+
 
 class TestHandler(tornado.web.RequestHandler):
     """
@@ -144,7 +202,8 @@ if __name__ == '__main__':
 
     app = tornado.web.Application([
         (ROUTE_PREFIX + r"users_show", UsersShowHandler),
-        (ROUTE_PREFIX + r"statuses_user_timeline", UserTimelineHandler)
+        (ROUTE_PREFIX + r"statuses_user_timeline", UserTimelineHandler),
+        (ROUTE_PREFIX + r"statuses_show", StatusesShowHandler)
     ])
 
     http_server = tornado.httpserver.HTTPServer(app)

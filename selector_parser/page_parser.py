@@ -1,8 +1,9 @@
+import random
 from datetime import datetime, timedelta
 import re
 import sys
 from time import sleep
-import random
+
 from tornado import gen
 import requests
 
@@ -354,44 +355,6 @@ class PageParser:
             return u'无'
 
 
-class CommentParser:
-    def __init__(self, weibo_id):
-        self.weibo_id = weibo_id
-        self.selector = None
-
-    @gen.coroutine
-    def get_long_weibo(self):
-        """获取长原创微博"""
-        try:
-            for _ in range(5):
-                comment_curl_result = yield weibo_web_curl('weibo_comment', weibo_id=self.weibo_id)
-                if not comment_curl_result['error_code']:
-                    self.selector = comment_curl_result['selector']
-
-                if self.selector is not None:
-                    info = self.selector.xpath("//div[@class='c']")[1]
-                    wb_content = utils.handle_garbled(info)
-                    wb_time = info.xpath("//span[@class='ct']/text()")[0]
-                    weibo_content = wb_content[wb_content.find(':') +
-                                               1:wb_content.rfind(wb_time)]
-                    if weibo_content is not None:
-                        return weibo_content
-                sleep(random.randint(6, 10))
-        except Exception:
-            LOGGING.exception(u'网络出错')
-            return u'网络出错'
-
-    @gen.coroutine
-    def get_long_retweet(self):
-        """获取长转发微博"""
-        try:
-            wb_content = yield self.get_long_weibo()
-            weibo_content = wb_content[:wb_content.rfind(u'原文转发')]
-            return weibo_content
-        except Exception as e:
-            LOGGING.exception(e)
-
-
 class MblogPicAllParser:
     def __init__(self, selector):
         self.selector = selector
@@ -433,3 +396,92 @@ class Weibo:
         result += u'评论数：%d\n' % self.comment_num
         result += u'url：https://weibo.cn/comment/%s\n' % self.weibo_id
         return result
+
+
+class CommentParser:
+    def __init__(self, weibo_id, selector=None):
+        self.weibo_id = weibo_id
+        self.selector = selector
+
+    @gen.coroutine
+    def get_long_weibo(self):
+        """获取长原创微博"""
+
+        try:
+            for i in range(5):
+                if self.selector is None or i != 0:  # 当selector为空时进行爬取网页
+                    comment_curl_result = yield weibo_web_curl('weibo_comment', weibo_id=self.weibo_id)
+                    if not comment_curl_result['error_code']:
+                        self.selector = comment_curl_result['selector']
+                    else:
+                        self.selector = None
+
+                if self.selector is not None:
+                    info = self.selector.xpath("//div[@id='M_']")[0]
+                    wb_content = utils.handle_garbled(info)
+                    wb_time = info.xpath("//span[@class='ct']/text()")[0]
+                    weibo_content = wb_content[wb_content.find(':') +
+                                               1:wb_content.rfind(wb_time)]
+                    if weibo_content is not None:
+                        return weibo_content
+                sleep(random.randint(6, 10))
+        except Exception:
+            LOGGING.exception(u'网络出错')
+            return u'网络出错'
+
+    @gen.coroutine
+    def get_long_retweet(self, rev_type=str):
+        """获取长转发微博"""
+        try:
+            wb_content = yield self.get_long_weibo()
+            retweet_content = wb_content[:wb_content.find(u'原文转发')]  # 转发内容的原文
+            retweet_reason = wb_content[wb_content.find(u'转发理由:') + 5: ]  # 转发理由
+
+            if rev_type is dict:
+                return {
+                    'retweet': retweet_content,
+                    'retweet_reason': retweet_reason
+                }
+            return '转发原文：{}\n转发理由：{}'.format(retweet_content, retweet_reason)
+
+        except Exception as e:
+            LOGGING.exception(e)
+
+    def get_footer(self):
+        """获取转发量、评论数、赞"""
+        span_nodes = self.selector.xpath(r'/html/body/div/span')
+        # 转发量
+        text = span_nodes[0].xpath(r'/a/text()')[0]
+        retweet_num = text[text.find('['): text.rfind(']')]
+        retweet_num = int(retweet_num)
+        # 评论数
+        text = span_nodes[1].xpath(r'/text()')[0]
+        comment_num = text[text.find('['): text.find(']')]
+        comment_num = int(comment_num)
+        # 赞
+        text = span_nodes[2].xpath(r'/a/text()')[0]
+        up_num = text[text.find('['): text.find(']')]
+        up_num = int(up_num)
+
+        return {
+            'retweet_num': retweet_num,
+            'comment_num': comment_num,
+            'up_num': up_num
+        }
+
+    def is_original(self):
+        """检查是否为原创"""
+        if self.selector is None:
+            return True
+        else:
+            res = self.selector.xpath('//*[@id="M_"]/div/span[@class="cmt"]')
+            return True if len(res) == 0 else False
+
+
+    def get_user(self):
+        """获取用户的id和用户名"""
+        user_node = self.selector.xpath('//*[@id="M_"]/div[1]/a')[0]
+        user_id = user_node.get('href')
+        user_id = user_id[user_id.rfind(r'/') + 1: ]
+        user_name = user_node.text
+        return user_id, user_name

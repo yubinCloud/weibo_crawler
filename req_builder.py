@@ -44,9 +44,9 @@ class UserWeiboPageReqBuilder(RequestBuilder):
 
 class WeiboCommentReqBuilder(RequestBuilder):
     """根据weibo_id获取该微博的评论URL"""
-    def __init__(self, weibo_id):
+    def __init__(self, weibo_id, page_num=1):
         super().__init__()
-        self.url = 'https://weibo.cn/comment/' + weibo_id
+        self.url = 'https://weibo.cn/comment/{}?page={}'.format(weibo_id, page_num)
 
 
 class MblogPicAllReqBuilder(RequestBuilder):

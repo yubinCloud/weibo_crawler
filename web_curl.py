@@ -1,7 +1,6 @@
 from tornado import gen
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from lxml import etree
-from enum import Enum
 
 import const
 import req_builder
