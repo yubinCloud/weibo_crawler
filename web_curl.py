@@ -17,6 +17,7 @@ class Aim(Enum):
     weibo_comment = auto()
     mblog_pic_all = auto()
     follow = auto()
+    fans = auto()
 
 
 aim_to_builder = {  # 将爬取目标对应到相符合的请求构造器
@@ -25,7 +26,8 @@ aim_to_builder = {  # 将爬取目标对应到相符合的请求构造器
     Aim.users_weibo_page: req_builder.UserWeiboPageReqBuilder,
     Aim.weibo_comment: req_builder.WeiboCommentReqBuilder,
     Aim.mblog_pic_all: req_builder.MblogPicAllReqBuilder,
-    Aim.follow: req_builder.FollowReqBuilder,
+    Aim.follow: req_builder.FollowsReqBuilder,
+    Aim.fans: req_builder.FansReqBuilder,
 }
 
 

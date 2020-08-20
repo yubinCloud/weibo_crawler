@@ -52,12 +52,18 @@ class MblogPicAllReqBuilder(RequestBuilder):
         self.url = 'https://weibo.cn/mblog/picAll/' + weibo_id + '?rl=1'
 
 
-class FollowReqBuilder(RequestBuilder):
+class FollowsReqBuilder(RequestBuilder):
     """一个用户关注的人的URL"""
-    def __init__(self, user_id, page_num=1):
+    def __init__(self, user_id, page_num):
         super().__init__()
         self.url = 'https://weibo.cn/{}/follow?page={}'.format(user_id, page_num)
 
+
+class FansReqBuilder(RequestBuilder):
+    """一个用户的粉丝页的URL"""
+    def __init__(self, user_id, page_num):
+        super().__init__()
+        self.url = 'https://weibo.cn/{}/fans?page={}'.format(user_id, page_num)
 
 
 if __name__ == '__main__':

@@ -191,9 +191,7 @@ class FriendsHandler(BaseHandler):
         if user_id is None:
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
-        if len(cursor) == 0:
-            cursor = 1
-        cursor = int(cursor)
+        cursor = 1 if len(cursor) == 0 else int(cursor)
         # 进行爬取
         follow_curl_result = yield weibo_web_curl(Aim.follow, user_id=user_id, page_num=cursor)
         if not follow_curl_result['error_code']:
@@ -226,12 +224,50 @@ class FriendsHandler(BaseHandler):
             print(e)
 
 
-
-
-
-
-
-
+class FollowersHandler(BaseHandler):
+    """
+    用户粉丝列表接口
+        说明：根据用户id搜索用户粉丝
+        路由：/weibo_curl/api/followers_list
+    """
+    @gen.coroutine
+    def get(self):
+        args_dict = self.args2dict()
+        user_id, cursor = args_dict.get('user_id'), args_dict.get('cursor', '1')
+        if user_id is None:
+            self.write(WeiboCurlError.URL_LACK_ARGS)
+            return
+        cursor = 1 if len(cursor) == 0 else int(cursor)
+        # 进行爬取
+        fans_curl_result = yield weibo_web_curl(Aim.fans, user_id=user_id, page_num=cursor)
+        if not fans_curl_result['error_code']:
+            self.selector = fans_curl_result['selector']
+        else:
+            error_res = curl_result_to_api_result(fans_curl_result)
+            self.write(error_res)
+            return
+        # 构建解析器
+        fansParser = FansParser(self.selector)
+        # 提取相关信息并返回结果
+        try:
+            fans_list = fansParser.get_fans()
+            max_page_num = fansParser.get_max_page_num()
+            if cursor < max_page_num:
+                cursor = str(cursor + 1)
+            success = const.SUCCESS.copy()
+            success['data'] = {
+                'result': {
+                    'friend_list': fans_list,
+                    'max_page_num': max_page_num
+                },
+                'cursor': cursor
+            }
+            print(success)
+            self.write(success)
+            return
+        except Exception as e:
+            const.LOGGING.error(e)
+            print(e)
 
 
 
@@ -256,6 +292,7 @@ if __name__ == '__main__':
         (ROUTE_PREFIX + r"statuses_user_timeline", UserTimelineHandler),
         (ROUTE_PREFIX + r"statuses_show", StatusesShowHandler),
         (ROUTE_PREFIX + r"friends_list", FriendsHandler),
+        (ROUTE_PREFIX + r"followers_list", FollowersHandler),
     ])
 
     http_server = tornado.httpserver.HTTPServer(app)

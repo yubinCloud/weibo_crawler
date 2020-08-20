@@ -1,5 +1,6 @@
 from const import LOGGING
-from lxml import etree
+import utils
+
 
 class FollowParser:
     """
@@ -20,19 +21,7 @@ class FollowParser:
 
 
     def get_one_follow(self, follow_node):
-        follow_node = follow_node.xpath('.//td')[1]
-        follow_user = follow_node.xpath('./a')[0]
-        user_name = follow_user.text  # 关注者的昵称
-        user_id = follow_user.get('href')  # 关注者的id
-        if type(user_id) is str:
-            user_id = user_id[user_id.rfind(r'/') + 1: ]
-        fans_num = follow_node.xpath('text()')  # 关注者的粉丝数
-        if len(fans_num) != 0:
-            # fans_num = str(fans_num[0])
-            fans_num = int(fans_num[0][2: -1])
-        else:
-            fans_num = None
-        return dict(user_id=user_id, user_name=user_name, fans_num=fans_num)
+        return utils.extract_from_one_table_node(follow_node)
 
 
     def get_max_page_num(self):
