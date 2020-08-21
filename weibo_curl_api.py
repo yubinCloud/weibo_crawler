@@ -7,7 +7,7 @@ from selector_parser import *
 import const
 from selector_parser import CommentParser
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
-from weibo_curl_error import WeiboCurlError
+from weibo_curl_error import WeiboCurlError, CookieInvalidException
 
 define("port", default=8000, help="run on the given port", type=int)
 
@@ -237,7 +237,11 @@ class FollowersHandler(BaseHandler):
         if user_id is None:
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
-        cursor = 1 if len(cursor) == 0 else int(cursor)
+        try:
+            cursor = 1 if len(cursor) == 0 else int(cursor)
+        except ValueError:  # 当对cursor转换产生错误时
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
         # 进行爬取
         fans_curl_result = yield weibo_web_curl(Aim.fans, user_id=user_id, page_num=cursor)
         if not fans_curl_result['error_code']:
@@ -270,6 +274,49 @@ class FollowersHandler(BaseHandler):
             print(e)
 
 
+class SearchTweetsHandler(BaseHandler):
+    """
+    推文搜索接口
+        说明：根据关键词搜索推文
+        路由：/weibo_curl/api/search_tweets
+    """
+    @gen.coroutine
+    def get(self):
+        args_dict = self.args2dict()
+        keyword, cursor, is_hot = args_dict.get('keyword'), args_dict.get('cursor', '1'), args_dict.get('is_hot', False)
+        if keyword is None:
+            self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
+            return
+        try:
+            cursor = 1 if len(cursor) == 0 else int(cursor)
+        except ValueError:
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
+        # 进行爬取
+        search_weibo_curl_result = yield weibo_web_curl(Aim.search_weibo,
+                                                        keyword=keyword, page_num=cursor, is_hot=is_hot)
+        if not search_weibo_curl_result['error_code']:
+            self.selector = search_weibo_curl_result['selector']
+        else:
+            error_res = curl_result_to_api_result(search_weibo_curl_result)
+            self.write(error_res)
+            return
+        # 构建解析器
+        searchWeiboParser = SearchWeiboParser(self.selector)
+        # 获取微博信息
+        weibo_list = searchWeiboParser.parse_page()
+        if weibo_list is None:
+            self.write(WeiboCurlError.PAGE_NOT_FOUND)  # 页面找不到
+            return
+        # 成功返回结果
+        success = const.SUCCESS.copy()
+        success['data'] = {
+            'result': weibo_list,
+            'cursor': str(cursor + 1)
+        }
+        self.write(success)
+        return
+
 
 
 
@@ -293,6 +340,7 @@ if __name__ == '__main__':
         (ROUTE_PREFIX + r"statuses_show", StatusesShowHandler),
         (ROUTE_PREFIX + r"friends_list", FriendsHandler),
         (ROUTE_PREFIX + r"followers_list", FollowersHandler),
+        (ROUTE_PREFIX + r"search_tweets", SearchTweetsHandler),
     ])
 
     http_server = tornado.httpserver.HTTPServer(app)

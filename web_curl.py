@@ -18,6 +18,7 @@ class Aim(Enum):
     mblog_pic_all = auto()
     follow = auto()
     fans = auto()
+    search_weibo = auto()
 
 
 aim_to_builder = {  # 将爬取目标对应到相符合的请求构造器
@@ -28,6 +29,7 @@ aim_to_builder = {  # 将爬取目标对应到相符合的请求构造器
     Aim.mblog_pic_all: req_builder.MblogPicAllReqBuilder,
     Aim.follow: req_builder.FollowsReqBuilder,
     Aim.fans: req_builder.FansReqBuilder,
+    Aim.search_weibo: req_builder.SearchWeiboReqBuilder,
 }
 
 
@@ -38,7 +40,7 @@ def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, with_cookie=True, **kw
     :param curl_aim: 爬取的目标，其值必须为Aim枚举值
     :param retry_time: 最多尝试发送request的次数
     :param kwargs: 需要转发给RequestBuilder的初始化参数
-    :return:
+    :return: 当参数use_bs4为True时返回bs4解析的soup，False时返回etree解析后的selector
     """
     global response
     client = AsyncHTTPClient()

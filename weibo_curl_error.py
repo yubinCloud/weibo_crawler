@@ -14,9 +14,9 @@ class WeiboCurlError:
     }
 
     # 用户不存在
-    USER_NOT_EXIST = {
+    PAGE_NOT_FOUND = {
         'error_code': 2004,
-        'error_msg': "User don't exist."
+        'error_msg': "Can't find the page."
     }
 
     # 微博网站返回其他错误信息
@@ -32,3 +32,17 @@ class WeiboCurlError:
     }
 
 
+class WeiboException(BaseException):
+    """微博爬虫项目的异常"""
+    def __init__(self):
+        super().__init__()
+
+
+
+class CookieInvalidException(WeiboException):
+    """Cookie失效的异常"""
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return 'Cookie invalid.'

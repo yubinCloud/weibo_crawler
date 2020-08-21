@@ -18,7 +18,7 @@ HEADERS = {
     "User-Agent": "MMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.52",
 }
 HEADERS_WITH_COOKIR = HEADERS.copy()
-HEADERS_WITH_COOKIR["Cookie"] = """SCF=Au_FGdKVc5NVf8bEdaC7IYLsLT1cCDiDxnY2ufmdfGIqiLNdi0VtQcWUNAZpwX6qas9_grOBVQd7PbXJPxacREw.; SSOLoginState=1597717597; SUB=_2A25yP0wNDeRhGeFK41QY8y7PzjyIHXVRwFRFrDV6PUJbkdANLVHFkW1NQsPSaqBq_yp3Oo3rcKAJpsXblqNTRkKh; SUHB=0ebtiEkMtM4DcG"""
+HEADERS_WITH_COOKIR["Cookie"] = """_T_WM=61471365121; MLOGIN=0; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5ObAfXIyBuBI7M63Sw-Yi65NHD95QNShnc1Ke7e0-7Ws4DqcjMi--NiK.Xi-2Ri--ciKnRi-zNS0BRSo.0ehefe5tt; SCF=Ag-pHF92PkAjbFi0TkzBe_0318uBL8w8f-n5-Db_tMuEhKx8WKiMJmwit3GoFxbbfVW8V8aXfHeYyhneZI662lc.; SUB=_2A25yO2V0DeRhGeFK41QY8y7PzjyIHXVRxAs8rDV6PUJbktAKLVLNkW1NQsPSalyQszk2bQN3XQ0KqA83OXSbykeK; SUHB=02Mvtd78rPWdTG; SSOLoginState=1597969700"""
 
 
 def get_headers(with_cookie=True):
@@ -96,3 +96,7 @@ SUCCESS = {
 
 # 日志
 LOGGING = logging
+
+if __name__ == "__main__":
+    update_cookie()
+    print(HEADERS_WITH_COOKIR["Cookie"])

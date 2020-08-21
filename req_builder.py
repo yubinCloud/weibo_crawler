@@ -66,6 +66,15 @@ class FansReqBuilder(RequestBuilder):
         self.url = 'https://weibo.cn/{}/fans?page={}'.format(user_id, page_num)
 
 
+class SearchWeiboReqBuilder(RequestBuilder):
+    """用于搜索微博的页面URL"""
+    def __init__(self, keyword, page_num, is_hot):
+        super().__init__()
+        search_type = r"xsort=hot" if is_hot else r"typeall=1&suball=1"
+        self.url = 'https://s.weibo.com/weibo?q={}&{}&page={}'.format(keyword, search_type, page_num)
+        
+
+
 if __name__ == '__main__':
     from tornado import gen
     from tornado import httpclient

@@ -1,4 +1,5 @@
 from const import LOGGING
+from weibo_curl_error import CookieInvalidException
 
 
 class IndexParser:
@@ -124,10 +125,3 @@ class User():
         return result
 
 
-class CookieInvalidException(Exception):
-    """Cookie失效的异常"""
-    def __init__(self):
-        super()
-
-    def __str__(self):
-        return 'Cookie invalid.'
