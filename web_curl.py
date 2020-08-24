@@ -19,6 +19,7 @@ class Aim(Enum):
     follow = auto()
     fans = auto()
     search_weibo = auto()
+    search_users = auto()
 
 
 aim_to_builder = {  # 将爬取目标对应到相符合的请求构造器
@@ -30,6 +31,7 @@ aim_to_builder = {  # 将爬取目标对应到相符合的请求构造器
     Aim.follow: req_builder.FollowsReqBuilder,
     Aim.fans: req_builder.FansReqBuilder,
     Aim.search_weibo: req_builder.SearchWeiboReqBuilder,
+    Aim.search_users: req_builder.SearchUsersReqBuilder,
 }
 
 

@@ -93,8 +93,12 @@ class UserTimelineHandler(BaseHandler):
         if user_id is None:  # 此时缺少参数
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
-        cursor = args_dict.get('cursor', 1)
-        cursor = int(cursor)
+        cursor = args_dict.get('cursor', '1')
+        try:
+            cursor = 1 if not cursor else int(cursor)
+        except ValueError:
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
         filter = args_dict.get('filter', 0)  # 默认爬取全部微博（原创+转发）
 
         page_curl_result = yield weibo_web_curl(Aim.users_weibo_page, user_id=user_id, page_num=cursor)
@@ -191,7 +195,11 @@ class FriendsHandler(BaseHandler):
         if user_id is None:
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
-        cursor = 1 if len(cursor) == 0 else int(cursor)
+        try:
+            cursor = 1 if not cursor else int(cursor)
+        except ValueError:
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
         # 进行爬取
         follow_curl_result = yield weibo_web_curl(Aim.follow, user_id=user_id, page_num=cursor)
         if not follow_curl_result['error_code']:
@@ -238,7 +246,7 @@ class FollowersHandler(BaseHandler):
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
         try:
-            cursor = 1 if len(cursor) == 0 else int(cursor)
+            cursor = 1 if cursor == 0 else int(cursor)
         except ValueError:  # 当对cursor转换产生错误时
             self.write(WeiboCurlError.URL_ARGS_ERROR)
             return
@@ -282,13 +290,14 @@ class SearchTweetsHandler(BaseHandler):
     """
     @gen.coroutine
     def get(self):
+        # 获取参数
         args_dict = self.args2dict()
         keyword, cursor, is_hot = args_dict.get('keyword'), args_dict.get('cursor', '1'), args_dict.get('is_hot', False)
         if keyword is None:
             self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
             return
         try:
-            cursor = 1 if len(cursor) == 0 else int(cursor)
+            cursor = 1 if not cursor else int(cursor)
         except ValueError:
             self.write(WeiboCurlError.URL_ARGS_ERROR)
             return
@@ -316,6 +325,31 @@ class SearchTweetsHandler(BaseHandler):
         }
         self.write(success)
         return
+
+
+
+class SearchUsersHandler(BaseHandler):
+    """
+    用户搜索接口
+        说明：根据关键词搜索用户
+        路由：/weibo_curl/api/users_search
+    """
+    @gen.coroutine
+    def get(self):
+        # 获取参数
+        args_dict = self.args2dict()
+        keyword, cursor = args_dict.get('keyword'), args_dict.get('cursor', '1')
+        if keyword is None:
+            self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
+            return
+        try:
+            cursor = 1 if not cursor else int(cursor)
+        except ValueError:
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
+        # 进行爬取
+
+
 
 
 
