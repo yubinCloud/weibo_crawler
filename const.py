@@ -72,7 +72,7 @@ PROXY = {"http": "http://171.35.167.225:9999"}
 proxy_pool = Queue(maxsize=-1)
 
 def init_proxy_pool():
-    proxy_pool.put({"http": "http://144.52.244.67:9999"})
+    proxy_pool.put({"http": "http://171.35.140.205:9999"})
 
 
 def get_proxy():

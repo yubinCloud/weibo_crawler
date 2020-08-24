@@ -8,6 +8,7 @@ import const
 from selector_parser import CommentParser
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError, CookieInvalidException
+from req_builder import UserType, Gender, AgeLimit
 
 define("port", default=8000, help="run on the given port", type=int)
 
@@ -347,7 +348,32 @@ class SearchUsersHandler(BaseHandler):
         except ValueError:
             self.write(WeiboCurlError.URL_ARGS_ERROR)
             return
+        user_type, gender, age_limit = args_dict.get('user_type'), args_dict.get('gender'), args_dict.get('age_limit')
         # 进行爬取
+        search_users_curl_result = yield weibo_web_curl(Aim.search_users, keyword=keyword, user_type=user_type,
+                                                        gender=gender, age_limit=age_limit, page_num=cursor)
+        if not search_users_curl_result['error_code']:
+            self.selector = search_users_curl_result['selector']
+        else:
+            error_res = curl_result_to_api_result(search_users_curl_result)
+            self.write(error_res)
+            return
+        # 构建解析器
+        searchUsersParser = SearchUsersParser(self.selector)
+        # 提取信息
+        user_list = searchUsersParser.parse_page()
+        # 返回信息
+        if user_list:
+            success = const.SUCCESS.copy()
+            success['data'] = {
+                'result': user_list,
+                'cursor': str(cursor + 1)
+            }
+            self.write(success)
+            return
+        self.write(WeiboCurlError.UNKNOWN_ERROR)
+        return
+
 
 
 
@@ -375,6 +401,7 @@ if __name__ == '__main__':
         (ROUTE_PREFIX + r"friends_list", FriendsHandler),
         (ROUTE_PREFIX + r"followers_list", FollowersHandler),
         (ROUTE_PREFIX + r"search_tweets", SearchTweetsHandler),
+        (ROUTE_PREFIX + r"users_search", SearchUsersHandler)
     ])
 
     http_server = tornado.httpserver.HTTPServer(app)

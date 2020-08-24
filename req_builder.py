@@ -75,13 +75,21 @@ class SearchWeiboReqBuilder(BaseRequestBuilder):
         self.url = 'https://s.weibo.com/weibo?q={}&{}&page={}'.format(keyword, search_type, page_num)
         
 
-@enum.unique
 class UserType(enum.Enum):
     """搜索用户时的用户类型限制"""
     NO_LIMIT = enum.auto()  # 无限制
     ORG_VIP = enum.auto()  # 机构认证
     PER_VIP = enum.auto()  # 个人认证
     ORDINARY = enum.auto()  # 普通用户
+
+    @staticmethod
+    def arg_convert(arg):
+        return {
+            None: UserType.NO_LIMIT,
+            1: UserType.ORG_VIP,
+            2: UserType.PER_VIP,
+            3: UserType.ORDINARY
+        }.get(arg)
 
     @staticmethod
     def to_url(user_type):
@@ -93,12 +101,19 @@ class UserType(enum.Enum):
         }.get(user_type)
 
 
-@enum.unique
 class Gender(enum.Enum):
     """搜索用户时的性别限制"""
     NO_LIMIT = enum.auto()
     MAN = enum.auto()
     WOMAN = enum.auto()
+
+    @staticmethod
+    def arg_convert(arg):
+        return {
+            None: Gender.NO_LIMIT,
+            1: Gender.MAN,
+            2: Gender.WOMAN
+        }.get(arg)
 
     @staticmethod
     def to_url(gender):
@@ -109,7 +124,6 @@ class Gender(enum.Enum):
         }.get(gender)
 
 
-@enum.unique
 class AgeLimit(enum.Enum):
     """搜索用户时的年龄限制"""
     NO_LIMIT = enum.auto()  # 不限年龄
@@ -118,6 +132,17 @@ class AgeLimit(enum.Enum):
     FROM_23_TO_29 = enum.auto()  # 23-29岁
     FROM_30_TO_39 = enum.auto()  # 30-39岁
     OVER_40 = enum.auto()  # 高于40岁
+
+    @staticmethod
+    def arg_convert(arg):
+        return {
+            None: AgeLimit.NO_LIMIT,
+            1: AgeLimit.BELOW_18,
+            2: AgeLimit.FROM_19_TO_22,
+            3: AgeLimit.FROM_30_TO_39,
+            4: AgeLimit.OVER_40
+        }.get(arg)
+
 
     @staticmethod
     def to_url(age_limit):
@@ -134,8 +159,7 @@ class AgeLimit(enum.Enum):
 class SearchUsersReqBuilder(BaseRequestBuilder):
     """用于搜索用户的页面URL"""
 
-    def __init__(self, keyword, user_type=UserType.NO_LIMIT, gender=Gender.NO_LIMIT,
-                 age_limit=AgeLimit.NO_LIMIT, page_num=1):
+    def __init__(self, keyword, user_type, gender, age_limit, page_num):
         """
         :param keyword: 搜索关键字
         :param user_type: 用户类型
@@ -144,7 +168,16 @@ class SearchUsersReqBuilder(BaseRequestBuilder):
         :param page_num: 页数
         """
         super().__init__()
-        query_str = ''.join({UserType.to_url(user_type), Gender.to_url(gender), AgeLimit.to_url(age_limit)})
+        # 先将这些参数转化成对应枚举类型
+        user_type = UserType.arg_convert(user_type)
+        gender = Gender.arg_convert(gender)
+        age_limit = AgeLimit.arg_convert(age_limit)
+        # 再将这些枚举类型转化成url的查询字符串
+        query_str = ''
+        query_args = [UserType.to_url(user_type), Gender.to_url(gender), AgeLimit.to_url(age_limit)]
+        for arg in query_args:
+            if arg is not None:
+                query_str += arg
         self.url = 'https://s.weibo.com/user?q={}&Refer=weibo_user{}page={}'.format(keyword, query_str, page_num)
 
 

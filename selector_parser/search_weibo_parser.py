@@ -1,6 +1,5 @@
 import re
 from urllib.parse import unquote
-from bs4 import BeautifulSoup
 
 from const import LOGGING
 import utils
@@ -19,25 +18,26 @@ class SearchWeiboParser:
         if len(check_empty) != 0:
             return None
         try:
-            weibo_list = self.get_all_weibo()
+            weibo_list = self._get_all_weibo()
         except Exception as e:
             print(e)
+            LOGGING.warning(e)
             weibo_list = None
         return weibo_list
 
 
-    def get_all_weibo(self):
+    def _get_all_weibo(self):
         """
         获取全部微博
         """
         weibo_list = list()
-        for weibo in self.parse_weibo():
+        for weibo in self._parse_weibo():
             if weibo is not None:
                 weibo_list.append(weibo)
         return weibo_list
 
 
-    def parse_weibo(self):
+    def _parse_weibo(self):
         """解析网页中的微博信息"""
         selector = self.selector
         a = selector.xpath('//div[@class="card-wrap"]')
@@ -242,19 +242,3 @@ class SearchWeiboParser:
             topics = ','.join(topic_list)
         return topics
 
-
-
-class SearchWeiboParser2:
-    def __init__(self, soup: BeautifulSoup):
-        self.soup = soup
-
-    def parser_page(self):
-        try:
-            weibo_list = self.get_all_weibo()
-        except Exception as e:
-            weibo_list = None
-
-    def get_all_weibo(self):
-        weibo_list = list()
-        all_div = self.soup.select('#pl_feedlist_index')[0]
-        all_weibo_nodes = all_div.find_all("div", class_='card-wrap')
