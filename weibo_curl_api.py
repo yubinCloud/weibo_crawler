@@ -44,7 +44,8 @@ class UsersShowHandler(BaseHandler):
             return
 
         task_finished = False  # 标志此次处理任务是否完成
-        while not task_finished:
+        task_run_time = 0  # 任务执行次数，当尝试次数达到最大后直接退出
+        while not task_finished and task_run_time < 3:
             try:
                 idx_curl_result = yield weibo_web_curl(Aim.users_show, user_id=user_id)  # 爬取主页的结果
                 if not idx_curl_result['error_code']:  # 如果主页http响应的状态码为200，则继续进行
@@ -83,6 +84,8 @@ class UsersShowHandler(BaseHandler):
                 continue
             except Exception as e:
                 const.LOGGING.error(e)
+        self.write(WeiboCurlError.UNKNOWN_ERROR)
+        return
 
 
 class UserTimelineHandler(BaseHandler):
@@ -107,7 +110,6 @@ class UserTimelineHandler(BaseHandler):
         filter = args_dict.get('filter', 0)  # 默认爬取全部微博（原创+转发）
 
         page_curl_result = yield weibo_web_curl(Aim.users_weibo_page, user_id=user_id, page_num=cursor)
-        pageParser = None
         if not page_curl_result['error_code']:
             pageParser = PageParser(user_id, page_curl_result['selector'], filter)
         else:
@@ -234,7 +236,7 @@ class FriendsHandler(BaseHandler):
             return
         except Exception as e:
             const.LOGGING.error(e)
-            print(e)
+            self.write(WeiboCurlError.UNKNOWN_ERROR)
 
 
 class FollowersHandler(BaseHandler):
@@ -284,7 +286,7 @@ class FollowersHandler(BaseHandler):
             return
         except Exception as e:
             const.LOGGING.error(e)
-            print(e)
+            self.write(WeiboCurlError.UNKNOWN_ERROR)
 
 
 class SearchTweetsHandler(BaseHandler):
