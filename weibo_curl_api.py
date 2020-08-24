@@ -2,18 +2,22 @@ import tornado.ioloop
 from tornado import web,gen, httpserver
 import tornado.options
 from tornado.options import define, options
+import json
 
 from selector_parser import *
 import const
 from selector_parser import CommentParser
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError, CookieInvalidException
-from req_builder import UserType, Gender, AgeLimit
 
 define("port", default=8000, help="run on the given port", type=int)
 
 
 class BaseHandler(tornado.web.RequestHandler):
+    def write(self, dict_data: dict):
+        data = json.dumps(dict_data, ensure_ascii=False)
+        super().write(data)
+
     def args2dict(self):
         """
         将请求url中的请求查询字符串转化成dict
