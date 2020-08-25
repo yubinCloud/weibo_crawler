@@ -147,8 +147,16 @@ class StatusesShowHandler(BaseHandler):
         if weibo_id is None:
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
+        hot = args_dict.get('hot', False)
+        cursor = args_dict.get('cursor', '1')
+        try:
+            cursor = 1 if not cursor else int(cursor)
+        except ValueError:
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
 
-        comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=weibo_id)
+
+        comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=weibo_id, page_num=cursor)
         if not comment_curl_result['error_code']:
             self.selector = comment_curl_result['selector']
         else:
@@ -166,6 +174,8 @@ class StatusesShowHandler(BaseHandler):
                 weibo_content = yield commonParser.get_long_retweet(rev_type=dict)
 
             user_id, user_name = commonParser.get_user()
+            comment_list = commonParser.get_all_comment()
+
 
             success = const.SUCCESS.copy()
             success['data'] = {
@@ -174,7 +184,8 @@ class StatusesShowHandler(BaseHandler):
                     'user_id': user_id,
                     'user_name': user_name,
                     'original': is_original,
-                    'weibo_content': weibo_content
+                    'weibo_content': weibo_content,
+                    'comments': comment_list
                 },
                 'cursor': ''
             }
