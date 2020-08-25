@@ -10,7 +10,7 @@ def get_account():
     获取一对账号与密码
     :return: (username, password)
     """
-    return ('17863116898', 'yubin3869')
+    return ('xxxxx', 'xxxxx')
 
 
 # 发送一个request最多重新尝试的次数
