@@ -28,6 +28,160 @@ class BaseHandler(tornado.web.RequestHandler):
         return input_dict
 
 
+class SearchTweetsHandler(BaseHandler):
+    """
+    推文搜索接口
+        说明：根据关键词搜索推文
+        路由：/weibo_curl/api/search_tweets
+    """
+    @gen.coroutine
+    def get(self):
+        # 获取参数
+        args_dict = self.args2dict()
+        keyword, cursor, is_hot = args_dict.get('keyword'), args_dict.get('cursor', '1'), args_dict.get('is_hot', False)
+        if keyword is None:
+            self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
+            return
+        try:
+            cursor = 1 if not cursor else int(cursor)
+        except ValueError:
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
+        # 进行爬取
+        search_weibo_curl_result = yield weibo_web_curl(Aim.search_weibo,
+                                                        keyword=keyword, page_num=cursor, is_hot=is_hot)
+        if not search_weibo_curl_result['error_code']:
+            self.selector = search_weibo_curl_result['selector']
+        else:
+            error_res = curl_result_to_api_result(search_weibo_curl_result)
+            self.write(error_res)
+            return
+        # 构建解析器
+        searchWeiboParser = SearchWeiboParser(self.selector)
+        # 获取微博信息
+        weibo_list = searchWeiboParser.parse_page()
+        if weibo_list is None:
+            self.write(WeiboCurlError.PAGE_NOT_FOUND)  # 页面找不到
+            return
+        # 成功返回结果
+        success = const.SUCCESS.copy()
+        success['data'] = {
+            'result': weibo_list,
+            'cursor': str(cursor + 1)
+        }
+        self.write(success)
+        return
+
+
+class StatusesShowHandler(BaseHandler):
+    """
+    推文展示接口
+    说明：根据推文id搜索推文
+    路由：/weibo_curl/api/statuses_show
+    """
+    @gen.coroutine
+    def get(self):
+        args_dict = self.args2dict()
+        weibo_id = args_dict.get('weibo_id')
+        if weibo_id is None:
+            self.write(WeiboCurlError.URL_LACK_ARGS)
+            return
+        hot = args_dict.get('hot', False)
+        cursor = args_dict.get('cursor', '1')
+        try:
+            cursor = 1 if not cursor else int(cursor)
+        except ValueError:
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
+
+
+        comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=weibo_id, page_num=cursor)
+        if not comment_curl_result['error_code']:
+            self.selector = comment_curl_result['selector']
+        else:
+            error_res = curl_result_to_api_result(comment_curl_result)
+            self.write(error_res)
+            return
+
+        commonParser = CommentParser(weibo_id, selector=self.selector)
+
+        try:
+            is_original = commonParser.is_original()
+            if is_original:
+                weibo_content = yield commonParser.get_long_weibo()
+            else:
+                weibo_content = yield commonParser.get_long_retweet(rev_type=dict)
+
+            user_id, user_name = commonParser.get_user()
+            comment_list = commonParser.get_all_comment()
+
+
+            success = const.SUCCESS.copy()
+            success['data'] = {
+                'result': {
+                    'weibo_id': weibo_id,
+                    'user_id': user_id,
+                    'user_name': user_name,
+                    'original': is_original,
+                    'weibo_content': weibo_content,
+                    'comments': comment_list
+                },
+                'cursor': ''
+            }
+            print(success)
+            self.write(success)
+            return
+        except Exception as e:
+            self.write(WeiboCurlError.UNKNOWN_ERROR)
+            const.LOGGING.error(e)
+
+
+class SearchUsersHandler(BaseHandler):
+    """
+    用户搜索接口
+        说明：根据关键词搜索用户
+        路由：/weibo_curl/api/users_search
+    """
+    @gen.coroutine
+    def get(self):
+        # 获取参数
+        args_dict = self.args2dict()
+        keyword, cursor = args_dict.get('keyword'), args_dict.get('cursor', '1')
+        if keyword is None:
+            self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
+            return
+        try:
+            cursor = 1 if not cursor else int(cursor)
+        except ValueError:
+            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            return
+        user_type, gender, age_limit = args_dict.get('user_type'), args_dict.get('gender'), args_dict.get('age_limit')
+        # 进行爬取
+        search_users_curl_result = yield weibo_web_curl(Aim.search_users, keyword=keyword, user_type=user_type,
+                                                        gender=gender, age_limit=age_limit, page_num=cursor)
+        if not search_users_curl_result['error_code']:
+            self.selector = search_users_curl_result['selector']
+        else:
+            error_res = curl_result_to_api_result(search_users_curl_result)
+            self.write(error_res)
+            return
+        # 构建解析器
+        searchUsersParser = SearchUsersParser(self.selector)
+        # 提取信息
+        user_list = searchUsersParser.parse_page()
+        # 返回信息
+        if user_list:
+            success = const.SUCCESS.copy()
+            success['data'] = {
+                'result': user_list,
+                'cursor': str(cursor + 1)
+            }
+            self.write(success)
+            return
+        self.write(WeiboCurlError.UNKNOWN_ERROR)
+        return
+
+
 class UsersShowHandler(BaseHandler):
     """
     API: 用户展示接口：根据用户id搜索用户
@@ -134,69 +288,6 @@ class UserTimelineHandler(BaseHandler):
         return
 
 
-class StatusesShowHandler(BaseHandler):
-    """
-    推文展示接口
-    说明：根据推文id搜索推文
-    路由：/weibo_curl/api/statuses_show
-    """
-    @gen.coroutine
-    def get(self):
-        args_dict = self.args2dict()
-        weibo_id = args_dict.get('weibo_id')
-        if weibo_id is None:
-            self.write(WeiboCurlError.URL_LACK_ARGS)
-            return
-        hot = args_dict.get('hot', False)
-        cursor = args_dict.get('cursor', '1')
-        try:
-            cursor = 1 if not cursor else int(cursor)
-        except ValueError:
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
-            return
-
-
-        comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=weibo_id, page_num=cursor)
-        if not comment_curl_result['error_code']:
-            self.selector = comment_curl_result['selector']
-        else:
-            error_res = curl_result_to_api_result(comment_curl_result)
-            self.write(error_res)
-            return
-
-        commonParser = CommentParser(weibo_id, selector=self.selector)
-
-        try:
-            is_original = commonParser.is_original()
-            if is_original:
-                weibo_content = yield commonParser.get_long_weibo()
-            else:
-                weibo_content = yield commonParser.get_long_retweet(rev_type=dict)
-
-            user_id, user_name = commonParser.get_user()
-            comment_list = commonParser.get_all_comment()
-
-
-            success = const.SUCCESS.copy()
-            success['data'] = {
-                'result': {
-                    'weibo_id': weibo_id,
-                    'user_id': user_id,
-                    'user_name': user_name,
-                    'original': is_original,
-                    'weibo_content': weibo_content,
-                    'comments': comment_list
-                },
-                'cursor': ''
-            }
-            print(success)
-            self.write(success)
-            return
-        except Exception as e:
-            self.write(WeiboCurlError.UNKNOWN_ERROR)
-            const.LOGGING.error(e)
-
-
 class FriendsHandler(BaseHandler):
     """
     用户朋友列表接口(朋友指关注的人)
@@ -296,98 +387,6 @@ class FollowersHandler(BaseHandler):
         except Exception as e:
             const.LOGGING.error(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
-
-
-class SearchTweetsHandler(BaseHandler):
-    """
-    推文搜索接口
-        说明：根据关键词搜索推文
-        路由：/weibo_curl/api/search_tweets
-    """
-    @gen.coroutine
-    def get(self):
-        # 获取参数
-        args_dict = self.args2dict()
-        keyword, cursor, is_hot = args_dict.get('keyword'), args_dict.get('cursor', '1'), args_dict.get('is_hot', False)
-        if keyword is None:
-            self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
-            return
-        try:
-            cursor = 1 if not cursor else int(cursor)
-        except ValueError:
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
-            return
-        # 进行爬取
-        search_weibo_curl_result = yield weibo_web_curl(Aim.search_weibo,
-                                                        keyword=keyword, page_num=cursor, is_hot=is_hot)
-        if not search_weibo_curl_result['error_code']:
-            self.selector = search_weibo_curl_result['selector']
-        else:
-            error_res = curl_result_to_api_result(search_weibo_curl_result)
-            self.write(error_res)
-            return
-        # 构建解析器
-        searchWeiboParser = SearchWeiboParser(self.selector)
-        # 获取微博信息
-        weibo_list = searchWeiboParser.parse_page()
-        if weibo_list is None:
-            self.write(WeiboCurlError.PAGE_NOT_FOUND)  # 页面找不到
-            return
-        # 成功返回结果
-        success = const.SUCCESS.copy()
-        success['data'] = {
-            'result': weibo_list,
-            'cursor': str(cursor + 1)
-        }
-        self.write(success)
-        return
-
-
-
-class SearchUsersHandler(BaseHandler):
-    """
-    用户搜索接口
-        说明：根据关键词搜索用户
-        路由：/weibo_curl/api/users_search
-    """
-    @gen.coroutine
-    def get(self):
-        # 获取参数
-        args_dict = self.args2dict()
-        keyword, cursor = args_dict.get('keyword'), args_dict.get('cursor', '1')
-        if keyword is None:
-            self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
-            return
-        try:
-            cursor = 1 if not cursor else int(cursor)
-        except ValueError:
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
-            return
-        user_type, gender, age_limit = args_dict.get('user_type'), args_dict.get('gender'), args_dict.get('age_limit')
-        # 进行爬取
-        search_users_curl_result = yield weibo_web_curl(Aim.search_users, keyword=keyword, user_type=user_type,
-                                                        gender=gender, age_limit=age_limit, page_num=cursor)
-        if not search_users_curl_result['error_code']:
-            self.selector = search_users_curl_result['selector']
-        else:
-            error_res = curl_result_to_api_result(search_users_curl_result)
-            self.write(error_res)
-            return
-        # 构建解析器
-        searchUsersParser = SearchUsersParser(self.selector)
-        # 提取信息
-        user_list = searchUsersParser.parse_page()
-        # 返回信息
-        if user_list:
-            success = const.SUCCESS.copy()
-            success['data'] = {
-                'result': user_list,
-                'cursor': str(cursor + 1)
-            }
-            self.write(success)
-            return
-        self.write(WeiboCurlError.UNKNOWN_ERROR)
-        return
 
 
 define("port", default=const.PORT_NUM, help="run on the given port", type=int)
