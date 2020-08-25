@@ -13,6 +13,12 @@ class WeiboCurlError:
         'error_msg': 'URL args error.'
     }
 
+    # 登录失效
+    LOGIN_ERROR = {
+        'error_code': 2003,
+        'error-msg': 'An error occurred while logging in.'
+    }
+
     # 用户不存在
     PAGE_NOT_FOUND = {
         'error_code': 2004,

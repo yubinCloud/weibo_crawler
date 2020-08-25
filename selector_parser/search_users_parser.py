@@ -1,25 +1,6 @@
 from const import LOGGING
 
 
-USER_TEMPLATE = {
-    'user_id': None,    # 用户的id
-    'nickname': None,   # 昵称
-    'titles': None,     # 所拥有的头衔
-    'verified_reason': None,    # 认证原因
-    'gender': None,     # 性别
-    'location': None,   # 位置
-    'description': None,        # 简介
-    'tags': None,       # 标签
-    'education': None,  # 教育信息
-    'work': None,       # 工作信息
-    'weibo_num': None,  # 微博数
-    'following': None,  # 关注数
-    'followers': None   # 粉丝数
-}
-
-def make_a_user():
-    """生成一个用来存储一个user信息的dict"""
-    return USER_TEMPLATE.copy()
 
 class SearchUsersParser:
     """搜索用户页面的解析器"""
@@ -27,7 +8,7 @@ class SearchUsersParser:
     USER_TEMPLATE = {
         'user_id': None,  # 用户的id
         'nickname': None,  # 昵称
-        'titles': None,  # 所拥有的头衔
+        'title': None,  # 所拥有的头衔
         'verified_reason': None,  # 认证原因
         'gender': None,  # 性别
         'location': None,  # 位置
@@ -43,7 +24,7 @@ class SearchUsersParser:
     @staticmethod
     def make_a_user():
         """生成一个用来存储一个user信息的dict"""
-        return USER_TEMPLATE.copy()
+        return SearchUsersParser.USER_TEMPLATE.copy()
 
     def __init__(self, search_users_selector):
         self.selector = search_users_selector
@@ -74,7 +55,7 @@ class SearchUsersParser:
 
     def _parse_one_user(self, user_node):
         """解析单个用户的selector节点"""
-        user = make_a_user()
+        user = SearchUsersParser.make_a_user()
         info_selector = user_node.xpath('./div[@class="info"]')[0]
         headers = info_selector.xpath('./div[1]/a')
 
@@ -82,7 +63,7 @@ class SearchUsersParser:
             header_node = headers[1]
             title = header_node.get('title')
             if title is not None:
-                user['titles'] = title
+                user['title'] = title
 
         user['user_id'] = headers[-1].get('uid')
         user['nickname'] = ''.join(headers[0].xpath(".//text()"))

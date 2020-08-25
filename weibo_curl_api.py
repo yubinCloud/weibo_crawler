@@ -10,8 +10,6 @@ from selector_parser import CommentParser
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError, CookieInvalidException
 
-define("port", default=8000, help="run on the given port", type=int)
-
 
 class BaseHandler(tornado.web.RequestHandler):
     def write(self, dict_data: dict):
@@ -276,7 +274,7 @@ class FollowersHandler(BaseHandler):
             success = const.SUCCESS.copy()
             success['data'] = {
                 'result': {
-                    'friend_list': fans_list,
+                    'follower_list': fans_list,
                     'max_page_num': max_page_num
                 },
                 'cursor': cursor
@@ -381,20 +379,7 @@ class SearchUsersHandler(BaseHandler):
         return
 
 
-
-
-
-
-
-class TestHandler(tornado.web.RequestHandler):
-    """
-    用来测试的接口
-    """
-    @gen.coroutine
-    def get(self):
-        result = yield weibo_web_curl("users_show")
-        print(result['selector'])
-
+define("port", default=const.PORT_NUM, help="run on the given port", type=int)
 
 
 if __name__ == '__main__':
@@ -412,4 +397,5 @@ if __name__ == '__main__':
 
     http_server = tornado.httpserver.HTTPServer(app)
     http_server.listen(options.port)
+    print('begin running...')
     tornado.ioloop.IOLoop.instance().start()

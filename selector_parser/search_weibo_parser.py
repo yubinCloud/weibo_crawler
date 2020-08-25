@@ -40,15 +40,14 @@ class SearchWeiboParser:
     def _parse_weibo(self):
         """解析网页中的微博信息"""
         selector = self.selector
-        a = selector.xpath('//div[@class="card-wrap"]')
         for sel in selector.xpath("//div[@class='card-wrap']"):
             info = sel.xpath(
                 "div[@class='card']/div[@class='card-feed']/div[@class='content']/div[@class='info']"
             )
             if len(info) != 0:
                 weibo = dict()
-                weibo['id'] = sel.xpath('@mid')[0]
-                weibo['bid'] = sel.xpath('(.//p[@class="from"])[last()]/a[1]/@href')[0].split('/')[-1].split('?')[0]
+                # weibo['id'] = sel.xpath('@mid')[0]
+                weibo['weibo_id'] = sel.xpath('(.//p[@class="from"])[last()]/a[1]/@href')[0].split('/')[-1].split('?')[0]
                 weibo['user_id'] = info[0].xpath(
                     'div[2]/a/@href')[0].split('?')[0].split('/')[-1]
                 weibo['screen_name'] = info[0].xpath(
@@ -109,7 +108,10 @@ class SearchWeiboParser:
                 created_at = sel.xpath(
                     '(.//p[@class="from"])[last()]/a[1]/text()')[0].replace(' ', '').replace('\n', '').split('前')[0]
                 weibo['created_at'] = utils.standardize_date(created_at)
-                source = sel.xpath('(.//p[@class="from"])[last()]/a[2]/text()')[0]
+                try:
+                    source = sel.xpath('(.//p[@class="from"])[last()]/a[2]/text()')[0]
+                except IndexError:
+                    source = None
                 weibo['source'] = source if source else ''
                 pics = ''
                 is_exist_pic = sel.xpath('.//div[@class="media media-piclist"]')

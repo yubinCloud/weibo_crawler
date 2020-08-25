@@ -2,6 +2,9 @@ import logging
 import requests
 from queue import Queue
 
+PORT_NUM = 8000  # app运行的端口号
+
+
 def get_account():
     """
     获取一对账号与密码
@@ -68,12 +71,12 @@ def update_cookie():
 
 
 # requests的代理池
-PROXY = {"http": "http://171.35.167.225:9999"}
 proxy_pool = Queue(maxsize=-1)
 
-def init_proxy_pool():
-    proxy_pool.put({"http": "http://171.35.140.205:9999"})
+def init_proxy_pool(proxy_pool):
+    proxy_pool.put({'host': '60.179.200.156', 'port': 3000})
 
+init_proxy_pool(proxy_pool)
 
 def get_proxy():
     """
@@ -81,7 +84,7 @@ def get_proxy():
     """
     cur_proxy = proxy_pool.get()
     proxy_pool.put(cur_proxy)
-    return cur_proxy
+    return cur_proxy['host'], cur_proxy['port']
 
 
 # requests的超时时长限制das

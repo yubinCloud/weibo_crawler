@@ -1,18 +1,23 @@
 import const
 from tornado.httpclient import HTTPRequest
+from tornado import  httpclient
 import enum
+
+# httpclient.AsyncHTTPClient.configure('tornado.curl_httpclient.CurlAsyncHTTPClient')
+
 
 class BaseRequestBuilder:
     """用以根据参数构造出request的相关信息"""
     def __init__(self):
         self.url = str()
-        self.proxy = const.PROXY
 
     def get_url(self):
         return self.url
 
     def make_request(self, method='GET',with_cookie=True, **req_kwargs):
+#        proxy_host, proxy_port = const.get_proxy()
         req = HTTPRequest(url=self.get_url(), method=method,
+#                          proxy_host=proxy_host, proxy_port=proxy_port,
                           headers=const.get_headers(with_cookie=with_cookie),
                           request_timeout=const.REQUEST_TIME_OUT, **req_kwargs)
         return req
