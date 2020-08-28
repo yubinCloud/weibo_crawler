@@ -302,41 +302,53 @@ example 与朋友列表接口返回的一样。
 ## 错误类型
 
 ```
-# URL缺少参数
-URL_LACK_ARGS = {
-    'error_code': 2001,
-    'error_msg': 'URL is lack of arguments.'
-}
+    # URL缺少参数
+    URL_LACK_ARGS = {
+        'error_code': 2001,
+        'error_msg': 'URL is lack of arguments.'
+    }
 
-# URL参数错误
-URL_ARGS_ERROR = {
-    'error_code': 2002,
-    'error_msg': 'URL args error.'
-}
+    # URL参数错误
+    URL_ARGS_ERROR = {
+        'error_code': 2002,
+        'error_msg': 'URL args error.'
+    }
 
-# 登录失效
-LOGIN_ERROR = {
-    'error_code': 2003,
-    'error-msg': 'An error occurred while logging in.'
-}
+    # 登录失效
+    LOGIN_ERROR = {
+        'error_code': 2003,
+        'error-msg': 'An error occurred while logging in.'
+    }
 
-# 用户不存在
-PAGE_NOT_FOUND = {
-    'error_code': 2004,
-    'error_msg': "Can't find the page."
-}
+    # 用户不存在
+    PAGE_NOT_FOUND = {
+        'error_code': 2004,
+        'error_msg': "Can't find the page."
+    }
 
-# 微博网站返回其他错误信息
-OTHER_RESP_ERROR = {
-    'error_code': 2005,
-    'error_msg': "Sina weibo return a error http response."
-}
+    # 微博网站返回其他错误信息
+    ABNORMAL_HTTP_CODE = {
+        'error_code': 2005,
+        'error_msg': "Sina weibo return an abnormal http code."
+    }
 
-# 未知错误
-UNKNOWN_ERROR = {
-    'error_code': 2006,
-    'error_msg': "An unknown error has occurred here."
-}
+    # 未知错误
+    UNKNOWN_ERROR = {
+        'error_code': 2006,
+        'error_msg': "An unknown error has occurred here."
+    }
+
+    # Cookie失效
+    COOKIE_INVALID = {
+        'error_code': 2007,
+        'error_msg': "Cookie invalid."
+    }
+
+    # ip失效
+    IP_INVALID = {
+        'error_code': 2008,
+        'error_msg': 'Current ip address invalid.'
+    }
 ```
 
 ## 如何获取cookie
