@@ -151,7 +151,7 @@ class SearchUsersReqBuilder(BaseRequestBuilder):
         # 再将这些枚举类型转化成url的查询字符串
         query_str = ''.join((user_type.value, gender.value, age_limit.value))
 
-        self.url = 'https://s.weibo.com/user?q={}&Refer=weibo_user{}page={}'.format(keyword, query_str, page_num)
+        self.url = 'https://s.weibo.com/user?q={}&Refer=weibo_user{}&page={}'.format(keyword, query_str, page_num)
 
 
 if __name__ == '__main__':

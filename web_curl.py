@@ -43,15 +43,16 @@ def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True,
             response = yield client.fetch(req)
         except HTTPError as e:
             const.LOGGING.warning('A HTTPError occurred:{} [{}, {}]'.format(e, curl_aim, kwargs))
-            if e.get('code') == 403 or e.get('code') == 404:
+            if e.get('code') == 404:
                 return {'error_code': 2, 'errmsg': "Can't find page: {}".format(req.url)}
             elif e.get('code') == 559:  # 超时错误
                 pass  # 再次通过builder构造request时会重新获得proxy
-            continue
+                continue
+            else:
+                print('test')
 
         http_code = response.code
         if http_code == 200:
-            print(response.body.decode('utf8'))
             return {'error_code': 0, 'selector': etree.HTML(response.body)}
         elif http_code == 302 or http_code == 403:  # Cookie 失效
             return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(req.headers.get('Cookie'))}
