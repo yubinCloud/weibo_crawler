@@ -13,6 +13,7 @@ from weibo_curl_error import WeiboCurlError, CookieInvalidException
 
 class BaseHandler(tornado.web.RequestHandler):
     def write(self, dict_data: dict):
+        """在发送之前将编码方式转化成Unicode"""
         data = json.dumps(dict_data, ensure_ascii=False)
         super().write(data)
 
@@ -81,12 +82,13 @@ class StatusesShowHandler(BaseHandler):
     """
     @gen.coroutine
     def get(self):
+        # 获取参数
         args_dict = self.args2dict()
         weibo_id = args_dict.get('weibo_id')
         if weibo_id is None:
             self.write(WeiboCurlError.URL_LACK_ARGS)
             return
-        hot = args_dict.get('hot', False)
+        hot = args_dict.get('hot', False)  # 是否获取热评
         cursor = args_dict.get('cursor', '1')
         try:
             cursor = 1 if not cursor else int(cursor)

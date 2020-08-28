@@ -80,16 +80,16 @@ class SearchWeiboParser:
                 weibo['text'] = txt_sel.xpath(
                     'string(.)').replace('\u200b', '').replace(
                     '\ue627', '')
-                weibo['article_url'] = self.get_article_url(txt_sel)
-                weibo['location'] = self.get_location(txt_sel)
+                weibo['article_url'] = self._get_article_url(txt_sel)
+                weibo['location'] = self._get_location(txt_sel)
                 if weibo['location']:
                     weibo['text'] = weibo['text'].replace(
                         '2' + weibo['location'], '')
                 weibo['text'] = weibo['text'][2:].replace(' ', '')
                 if is_long_weibo:
                     weibo['text'] = weibo['text'][:-6]
-                weibo['at_users'] = self.get_at_users(txt_sel)
-                weibo['topics'] = self.get_topics(txt_sel)
+                weibo['at_users'] = self._get_at_users(txt_sel)
+                weibo['topics'] = self._get_topics(txt_sel)
                 reposts_count = sel.xpath('.//a[@action-type="feed_list_forward"]/text()')[0]
                 try:
                     reposts_count = re.findall(r'\d+.*', reposts_count)
@@ -152,15 +152,15 @@ class SearchWeiboParser:
                         'string(.)').replace('\u200b',
                                                              '').replace(
                         '\ue627', '')
-                    retweet['article_url'] = self.get_article_url(retweet_txt_sel)
-                    retweet['location'] = self.get_location(retweet_txt_sel)
+                    retweet['article_url'] = self._get_article_url(retweet_txt_sel)
+                    retweet['location'] = self._get_location(retweet_txt_sel)
                     if retweet['location']:
                         retweet['text'] = retweet['text'].replace('2' + retweet['location'], '')
                     retweet['text'] = retweet['text'][2:].replace(' ', '')
                     if is_long_retweet:
                         retweet['text'] = retweet['text'][:-6]
-                    retweet['at_users'] = self.get_at_users(retweet_txt_sel)
-                    retweet['topics'] = self.get_topics(retweet_txt_sel)
+                    retweet['at_users'] = self._get_at_users(retweet_txt_sel)
+                    retweet['topics'] = self._get_topics(retweet_txt_sel)
                     reposts_count = retweet_sel[0].xpath('.//ul[@class="act s-fr"]/li/a[1]/text()')[0]
                     reposts_count = re.findall(r'\d+.*', reposts_count)
                     retweet['reposts_count'] = reposts_count[
@@ -188,7 +188,7 @@ class SearchWeiboParser:
                 print(weibo)
                 yield weibo
 
-    def get_article_url(self, selector):
+    def _get_article_url(self, selector):
         """获取微博头条文章url"""
         article_url = ''
         text = selector.xpath('string(.)')[0].replace(
@@ -205,7 +205,7 @@ class SearchWeiboParser:
                     break
         return article_url
 
-    def get_location(self, selector):
+    def _get_location(self, selector):
         """获取微博发布位置"""
         a_list = selector.xpath('.//a')
         location = ''
@@ -216,7 +216,7 @@ class SearchWeiboParser:
                 break
         return location
 
-    def get_at_users(self, selector):
+    def _get_at_users(self, selector):
         """获取微博中@的用户昵称"""
         a_list = selector.xpath('.//a')
         at_list = []
@@ -230,7 +230,7 @@ class SearchWeiboParser:
                         at_list.append(at_user)
         return at_list
 
-    def get_topics(self, selector):
+    def _get_topics(self, selector):
         """获取参与的微博话题"""
         a_list = selector.xpath('.//a')
         topics = ''

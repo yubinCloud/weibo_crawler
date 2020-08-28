@@ -11,32 +11,19 @@ from weibo_curl_error import WeiboCurlError
 @unique  # 确保枚举值唯一
 class Aim(Enum):
     """枚举全部爬取目标"""
-    users_show = auto()
-    users_info = auto()
-    users_weibo_page = auto()
-    weibo_comment = auto()
-    mblog_pic_all = auto()
-    follow = auto()
-    fans = auto()
-    search_weibo = auto()
-    search_users = auto()
-
-
-aim_to_builder = {  # 将爬取目标对应到相符合的请求构造器
-    Aim.users_show: req_builder.UserIndexReqBuilder,
-    Aim.users_info: req_builder.UserInfoReqBuilder,
-    Aim.users_weibo_page: req_builder.UserWeiboPageReqBuilder,
-    Aim.weibo_comment: req_builder.WeiboCommentReqBuilder,
-    Aim.mblog_pic_all: req_builder.MblogPicAllReqBuilder,
-    Aim.follow: req_builder.FollowsReqBuilder,
-    Aim.fans: req_builder.FansReqBuilder,
-    Aim.search_weibo: req_builder.SearchWeiboReqBuilder,
-    Aim.search_users: req_builder.SearchUsersReqBuilder,
-}
+    users_show = req_builder.UserIndexReqBuilder
+    users_info = req_builder.UserInfoReqBuilder
+    users_weibo_page = req_builder.UserWeiboPageReqBuilder
+    weibo_comment = req_builder.WeiboCommentReqBuilder
+    mblog_pic_all = req_builder.MblogPicAllReqBuilder
+    follow = req_builder.FollowsReqBuilder
+    fans = req_builder.FansReqBuilder
+    search_weibo = req_builder.SearchWeiboReqBuilder
+    search_users = req_builder.SearchUsersReqBuilder
 
 
 @gen.coroutine
-def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, with_cookie=True, **kwargs):
+def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True, **kwargs):
     """
     根据爬取的目标对相对应的网站发送request请求并获得response
     :param curl_aim: 爬取的目标，其值必须为Aim枚举值
@@ -46,7 +33,8 @@ def weibo_web_curl(curl_aim, retry_time=const.RETRY_TIME, with_cookie=True, **kw
     """
     global response
     client = AsyncHTTPClient()
-    builder = aim_to_builder.get(curl_aim)
+    builder = curl_aim.value
+
 
     for epoch in range(retry_time):
         req = builder(**kwargs).make_request(with_cookie=with_cookie)  # 获得 http request
