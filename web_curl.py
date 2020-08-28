@@ -38,6 +38,7 @@ def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True,
 
     for epoch in range(retry_time):
         req = builder(**kwargs).make_request(with_cookie=with_cookie)  # 获得 http request
+
         try:
             response = yield client.fetch(req)
         except HTTPError as e:
@@ -52,20 +53,33 @@ def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True,
         if http_code == 200:
             print(response.body.decode('utf8'))
             return {'error_code': 0, 'selector': etree.HTML(response.body)}
+        elif http_code == 302 or http_code == 403:  # Cookie 失效
+            return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(req.headers.get('Cookie'))}
+        elif http_code == 418:  # ip失效，偶尔产生，需要再次请求
+            return {'error_code': 4, 'errmsg': 'Please change a proxy and send a request again'}
         else:
-            return {'error_code': 1, 'errmsg': 'Sina return a Abnormal http status code: {}'.format(http_code)}
+            return {'error_code': 1, 'errmsg': 'Http status code: {}'.format(http_code)}
 
 
 def curl_result_to_api_result(curl_result):
     """
     将 weibo_web_curl 返回的错误结果进行处理获得对应的错误信息
     """
-    error_res = None
-    errcode = curl_result.get('error_code')
-    if errcode == 1:
-        error_res = WeiboCurlError.OTHER_RESP_ERROR.copy()
-        error_res['error_msg'] = curl_result.get('errmsg')
-    elif errcode == 2:
+    error_code = curl_result.get('error_code')
+
+    if error_code == 1:
+        error_res = WeiboCurlError.ABNORMAL_HTTP_CODE.copy()
+        error_res['error_msg'] += curl_result.get('errmsg')
+    elif error_code == 2:
         error_res = WeiboCurlError.URL_ARGS_ERROR.copy()
         error_res['error_msg'] += curl_result.get('errmsg')
+    elif error_code == 3:
+        error_res = WeiboCurlError.COOKIE_INVALID.copy()
+        error_res['error_msg'] += curl_result.get('errmsg')
+    elif error_code == 4:
+        error_res = WeiboCurlError.IP_INVALID.copy()
+        error_res['error_msg'] += curl_result.get('errmsg')
+    else:
+        error_res = WeiboCurlError.UNKNOWN_ERROR.copy()
+
     return error_res

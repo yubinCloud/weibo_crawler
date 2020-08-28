@@ -26,15 +26,27 @@ class WeiboCurlError:
     }
 
     # 微博网站返回其他错误信息
-    OTHER_RESP_ERROR = {
+    ABNORMAL_HTTP_CODE = {
         'error_code': 2005,
-        'error_msg': "Sina weibo return a error http response."
+        'error_msg': "Sina weibo return an abnormal http code."
     }
 
     # 未知错误
     UNKNOWN_ERROR = {
         'error_code': 2006,
         'error_msg': "An unknown error has occurred here."
+    }
+
+    # Cookie失效
+    COOKIE_INVALID = {
+        'error_code': 2007,
+        'error_msg': "Cookie invalid."
+    }
+
+    # ip失效
+    IP_INVALID = {
+        'error_code': 2008,
+        'error_msg': 'Current ip address invalid.'
     }
 
 
