@@ -82,10 +82,10 @@ class SearchWeiboReqBuilder(BaseRequestBuilder):
 
 class UserType(enum.Enum):
     """搜索用户时的用户类型限制"""
-    NO_LIMIT = enum.auto()  # 无限制
-    ORG_VIP = enum.auto()  # 机构认证
-    PER_VIP = enum.auto()  # 个人认证
-    ORDINARY = enum.auto()  # 普通用户
+    NO_LIMIT = ''  # 无限制
+    ORG_VIP = '&auth=org_vip'  # 机构认证
+    PER_VIP = '&auth=per_vip'  # 个人认证
+    ORDINARY = '&auth=ord'  # 普通用户
 
     @staticmethod
     def arg_convert(arg):
@@ -94,23 +94,14 @@ class UserType(enum.Enum):
             1: UserType.ORG_VIP,
             2: UserType.PER_VIP,
             3: UserType.ORDINARY
-        }.get(arg)
-
-    @staticmethod
-    def to_url(user_type):
-        return {
-            UserType.NO_LIMIT: '',
-            UserType.ORG_VIP: '&auth=org_vip',
-            UserType.PER_VIP: '&auth=per_vip',
-            UserType.ORDINARY: '&auth=ord'
-        }.get(user_type)
+        }.get(arg, UserType.NO_LIMIT)
 
 
 class Gender(enum.Enum):
     """搜索用户时的性别限制"""
-    NO_LIMIT = enum.auto()
-    MAN = enum.auto()
-    WOMAN = enum.auto()
+    NO_LIMIT = ''
+    MAN = '&gender=man'
+    WOMAN = '&gender=woman'
 
     @staticmethod
     def arg_convert(arg):
@@ -118,25 +109,17 @@ class Gender(enum.Enum):
             None: Gender.NO_LIMIT,
             1: Gender.MAN,
             2: Gender.WOMAN
-        }.get(arg)
-
-    @staticmethod
-    def to_url(gender):
-        return {
-            Gender.NO_LIMIT: '',
-            Gender.MAN: '&gender=man',
-            Gender.WOMAN: '&gender=woman'
-        }.get(gender)
+        }.get(arg, Gender.NO_LIMIT)
 
 
 class AgeLimit(enum.Enum):
     """搜索用户时的年龄限制"""
-    NO_LIMIT = enum.auto()  # 不限年龄
-    BELOW_18 = enum.auto()  # 18岁以下
-    FROM_19_TO_22 = enum.auto()  # 19-22岁
-    FROM_23_TO_29 = enum.auto()  # 23-29岁
-    FROM_30_TO_39 = enum.auto()  # 30-39岁
-    OVER_40 = enum.auto()  # 高于40岁
+    NO_LIMIT = ''  # 不限年龄
+    BELOW_18 = '&age=18y'  # 18岁以下
+    FROM_19_TO_22 = '&age=22y'  # 19-22岁
+    FROM_23_TO_29 = '&age=29y'  # 23-29岁
+    FROM_30_TO_39 = '&age=39y'  # 30-39岁
+    OVER_40 = '&age=40y'  # 高于40岁
 
     @staticmethod
     def arg_convert(arg):
@@ -146,19 +129,7 @@ class AgeLimit(enum.Enum):
             2: AgeLimit.FROM_19_TO_22,
             3: AgeLimit.FROM_30_TO_39,
             4: AgeLimit.OVER_40
-        }.get(arg)
-
-
-    @staticmethod
-    def to_url(age_limit):
-        return {
-            AgeLimit.NO_LIMIT: '',
-            AgeLimit.BELOW_18: '&age=18y',
-            AgeLimit.FROM_19_TO_22: '&age=22y',
-            AgeLimit.FROM_23_TO_29: '&age=29y',
-            AgeLimit.FROM_30_TO_39: '&age=39y',
-            AgeLimit.OVER_40: '&age=40y'
-        }.get(age_limit)
+        }.get(arg, AgeLimit.NO_LIMIT)
 
 
 class SearchUsersReqBuilder(BaseRequestBuilder):
@@ -178,11 +149,8 @@ class SearchUsersReqBuilder(BaseRequestBuilder):
         gender = Gender.arg_convert(gender)
         age_limit = AgeLimit.arg_convert(age_limit)
         # 再将这些枚举类型转化成url的查询字符串
-        query_str = ''
-        query_args = [UserType.to_url(user_type), Gender.to_url(gender), AgeLimit.to_url(age_limit)]
-        for arg in query_args:
-            if arg is not None:
-                query_str += arg
+        query_str = ''.join((user_type.value, gender.value, age_limit.value))
+
         self.url = 'https://s.weibo.com/user?q={}&Refer=weibo_user{}page={}'.format(keyword, query_str, page_num)
 
 
