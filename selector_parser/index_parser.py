@@ -1,3 +1,5 @@
+import sys
+
 from const import LOGGING
 from weibo_curl_error import CookieInvalidException
 
@@ -32,7 +34,8 @@ class IndexParser:
             self.user.followers = int(user_info[2][3:-1])
             return self.user
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
 
     def get_page_num(self):
         """获取微博总页数"""
@@ -44,7 +47,8 @@ class IndexParser:
                                  [0].attrib['value'])
             return page_num
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
 
 
 
@@ -91,9 +95,9 @@ class InfoParser:
                     "//div[@class='c'][4]/text()")[0][1:].replace(
                         u'\xa0', u' ')
             return user
-        except Exception as e:  # TODO 此处未处理异常
-            print(e)
-            pass
+        except Exception as e:
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
 
 
 class User():

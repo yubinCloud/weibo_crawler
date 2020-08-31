@@ -6,7 +6,6 @@ import json
 
 from selector_parser import *
 import const
-from selector_parser import CommentParser
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError, CookieInvalidException
 from account.account import account_pool
@@ -206,49 +205,48 @@ class UsersShowHandler(BaseHandler):
             self.write(WeiboCurlError.REQUEST_LACK_ARGS)
             return
 
-        task_finished = False  # 标志此次处理任务是否完成
-        task_run_time = 0  # 任务执行次数，当尝试次数达到最大后直接退出
-        while not task_finished and task_run_time < 3:
-            try:
-                idx_curl_result = yield weibo_web_curl(Aim.users_show, user_id=user_id)  # 爬取主页的结果
-                if not idx_curl_result['error_code']:  # 如果主页http响应的状态码为200，则继续进行
-                    idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
+        try:
+            idx_curl_result = yield weibo_web_curl(Aim.users_show, user_id=user_id)  # 爬取主页的结果
+            if not idx_curl_result['error_code']:
+                idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
+
+                try:
                     user_id = idxParser.get_user_id()  # 获取到真正的user_id
-
-                    info_curl_result = yield weibo_web_curl(Aim.users_info, user_id=user_id)  # 爬取信息页的结果
-                    if not info_curl_result['error_code']:
-                        infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
-                        user_info = infoParser.extract_user_info()
-                        user = idxParser.get_user(user_info)
-                        print(user.__dict__)
-
-                        success = const.SUCCESS.copy()
-                        try:
-                            success['data'] = {
-                                'result': user.__dict__,
-                                'cursor': ''
-                            }
-                        except AttributeError:  # user没有__dict__属性时，说明未爬取到user
-                            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)  # 报告参数错误
-                            return
-                        self.write(success)
-                        return
-                    else:
-                        error_res = curl_result_to_api_result(info_curl_result)
-                        self.write(error_res)
-                        return
-                else:
-                    error_res = curl_result_to_api_result(idx_curl_result)
-                    self.write(error_res)
+                except CookieInvalidException:
+                    self.write(WeiboCurlError.COOKIE_INVALID)
                     return
 
-            except CookieInvalidException:  # Cookie无效，更新Cookie后重新开始任务
-                const.update_cookie()
-                continue
-            except Exception as e:
-                const.LOGGING.error(e)
-        self.write(WeiboCurlError.UNKNOWN_ERROR)
-        return
+                info_curl_result = yield weibo_web_curl(Aim.users_info, user_id=user_id)  # 爬取信息页的结果
+                if not info_curl_result['error_code']:
+                    infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
+                    user_info = infoParser.extract_user_info()
+                    user = idxParser.get_user(user_info)
+                    print(user.__dict__)
+
+                    success = const.SUCCESS.copy()
+                    try:
+                        success['data'] = {
+                            'result': user.__dict__,
+                            'cursor': ''
+                        }
+                    except AttributeError:  # user没有__dict__属性时，说明未爬取到user
+                        self.write(WeiboCurlError.REQUEST_ARGS_ERROR)  # 报告参数错误
+                        return
+                    self.write(success)
+                    return
+                else:
+                    error_res = curl_result_to_api_result(info_curl_result)
+                    self.write(error_res)
+                    return
+            else:
+                error_res = curl_result_to_api_result(idx_curl_result)
+                self.write(error_res)
+                return
+
+        except Exception as e:
+            const.LOGGING.error('{} occur a error: {}'.format(self.__class__, e))
+            self.write(WeiboCurlError.UNKNOWN_ERROR)
+            return
 
 
 class UserTimelineHandler(BaseHandler):
@@ -283,8 +281,6 @@ class UserTimelineHandler(BaseHandler):
 
         for weibo in weibos:
             print(weibo.__dict__)
-
-        print(weibo_id_list)
 
         success = const.SUCCESS.copy()
         try:
@@ -427,11 +423,9 @@ class AccountUpdateHandler(BaseHandler):
         return
 
 
-
-define("port", default=const.PORT_NUM, help="run on the given port", type=int)
-
-
+# 启动主程序
 if __name__ == '__main__':
+    define("port", default=const.PORT_NUM, help="run on the given port", type=int)  # 定义端口号
     ROUTE_PREFIX = r"/weibo_curl/api/"  # 路由前缀
 
     app = tornado.web.Application([
