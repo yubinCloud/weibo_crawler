@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import re
 import sys
 from time import sleep
+from lxml import etree
 
 from tornado import gen
 import requests
@@ -15,7 +16,7 @@ from .base_parser import BaseParser
 
 class PageParser(BaseParser):
     def __init__(self, user_id, response, filter):
-        super.__init__(response)
+        super().__init__(response)
         self.user_id = user_id
         self.filter = filter  # 值为1代表爬取全部原创微博，0代表爬取全部微博（原创+转发）
 
@@ -355,9 +356,9 @@ class PageParser(BaseParser):
             return u'无'
 
 
-class MblogPicAllParser:
-    def __init__(self, selector):
-        self.selector = selector
+class MblogPicAllParser(BaseParser):
+    def __init__(self, response):
+        super().__init__(response)
 
     def extract_preview_picture_list(self):
         return self.selector.xpath('//img/@src')
@@ -398,10 +399,10 @@ class Weibo:
         return result
 
 
-class CommentParser:
-    def __init__(self, weibo_id, selector=None):
+class CommentParser(BaseParser):
+    def __init__(self, weibo_id, response=None):
+        super().__init__(response)
         self.weibo_id = weibo_id
-        self.selector = selector
 
     @gen.coroutine
     def get_long_weibo(self):
@@ -412,7 +413,7 @@ class CommentParser:
                 if self.selector is None or i != 0:  # 当selector为空时进行爬取网页
                     comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=self.weibo_id)
                     if not comment_curl_result['error_code']:
-                        self.selector = comment_curl_result['selector']
+                        self.selector = etree.HTML(comment_curl_result['response'].body)
                     else:
                         self.selector = None
 
