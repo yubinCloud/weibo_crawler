@@ -50,7 +50,7 @@ class WeiboCurlError:
     }
 
 
-class WeiboException(BaseException):
+class WeiboException(Exception):
     """微博爬虫项目的异常"""
     def __init__(self):
         super().__init__()
@@ -62,5 +62,5 @@ class CookieInvalidException(WeiboException):
     def __init__(self):
         super().__init__()
 
-    def __str__(self):
+    def __repr__(self):
         return 'Cookie invalid.'
