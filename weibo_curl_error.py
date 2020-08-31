@@ -49,6 +49,12 @@ class WeiboCurlError:
         'error_msg': 'Current ip address invalid.'
     }
 
+    # HTML解析出错
+    HTML_PARSE_ERROR = {
+        'error_code': 2009,
+        'error_msg': 'Error parsing HTML page.'
+    }
+
 
 class WeiboException(Exception):
     """微博爬虫项目的异常"""
@@ -66,7 +72,7 @@ class CookieInvalidException(WeiboException):
         return 'Cookie invalid.'
 
 
-class HTMLParseError(WeiboException):
+class HTMLParseException(WeiboException):
     """HTML页面解析出错"""
     def __init__(self):
         super().__init__()
