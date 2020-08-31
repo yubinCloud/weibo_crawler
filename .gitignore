@@ -118,3 +118,4 @@ dmypy.json
 # self resource
 /TODO.xlsx
 /doc.md
+/test
