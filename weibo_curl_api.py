@@ -9,7 +9,7 @@ import const
 from selector_parser import CommentParser
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError, CookieInvalidException
-
+from account.account import account_pool
 
 class BaseHandler(tornado.web.RequestHandler):
     def write(self, dict_data: dict):
@@ -28,6 +28,15 @@ class BaseHandler(tornado.web.RequestHandler):
             input_dict[i] = self.get_argument(i)
         return input_dict
 
+    def get_json(self):
+        """
+        将获取post时的json
+        """
+        json_str = self.request.body.decode('utf8')
+        json_obj = json.loads(json_str)
+        return json_obj
+
+
 
 class SearchTweetsHandler(BaseHandler):
     """
@@ -41,12 +50,12 @@ class SearchTweetsHandler(BaseHandler):
         args_dict = self.args2dict()
         keyword, cursor, is_hot = args_dict.get('keyword'), args_dict.get('cursor', '1'), args_dict.get('is_hot', False)
         if keyword is None:
-            self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
+            self.write(WeiboCurlError.REQUEST_LACK_ARGS)  # 缺少参数
             return
         try:
             cursor = 1 if not cursor else int(cursor)
         except ValueError:
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
         # 进行爬取
         search_weibo_curl_result = yield weibo_web_curl(Aim.search_weibo,
@@ -86,14 +95,14 @@ class StatusesShowHandler(BaseHandler):
         args_dict = self.args2dict()
         weibo_id = args_dict.get('weibo_id')
         if weibo_id is None:
-            self.write(WeiboCurlError.URL_LACK_ARGS)
+            self.write(WeiboCurlError.REQUEST_LACK_ARGS)
             return
         hot = args_dict.get('hot', False)  # 是否获取热评
         cursor = args_dict.get('cursor', '1')
         try:
             cursor = 1 if not cursor else int(cursor)
         except ValueError:
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
 
 
@@ -150,12 +159,12 @@ class SearchUsersHandler(BaseHandler):
         args_dict = self.args2dict()
         keyword, cursor = args_dict.get('keyword'), args_dict.get('cursor', '1')
         if keyword is None:
-            self.write(WeiboCurlError.URL_LACK_ARGS)  # 缺少参数
+            self.write(WeiboCurlError.REQUEST_LACK_ARGS)  # 缺少参数
             return
         try:
             cursor = 1 if not cursor else int(cursor)
         except ValueError:
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
         user_type, gender, age_limit = args_dict.get('user_type'), args_dict.get('gender'), args_dict.get('age_limit')
         # 进行爬取
@@ -194,7 +203,7 @@ class UsersShowHandler(BaseHandler):
         args_dict = self.args2dict()
         user_id = args_dict.get('user_id')
         if user_id is None:  # 此时URL缺少查询参数
-            self.write(WeiboCurlError.URL_LACK_ARGS)
+            self.write(WeiboCurlError.REQUEST_LACK_ARGS)
             return
 
         task_finished = False  # 标志此次处理任务是否完成
@@ -220,7 +229,7 @@ class UsersShowHandler(BaseHandler):
                                 'cursor': ''
                             }
                         except AttributeError:  # user没有__dict__属性时，说明未爬取到user
-                            self.write(WeiboCurlError.URL_ARGS_ERROR)  # 报告参数错误
+                            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)  # 报告参数错误
                             return
                         self.write(success)
                         return
@@ -253,13 +262,13 @@ class UserTimelineHandler(BaseHandler):
         args_dict = self.args2dict()
         user_id = args_dict.get('user_id')
         if user_id is None:  # 此时缺少参数
-            self.write(WeiboCurlError.URL_LACK_ARGS)
+            self.write(WeiboCurlError.REQUEST_LACK_ARGS)
             return
         cursor = args_dict.get('cursor', '1')
         try:
             cursor = 1 if not cursor else int(cursor)
         except ValueError:
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
         filter = args_dict.get('filter', 0)  # 默认爬取全部微博（原创+转发）
 
@@ -284,7 +293,7 @@ class UserTimelineHandler(BaseHandler):
                 'cursor': str(cursor + 1)
             }
         except AttributeError:  # user没有__dict__属性时，说明未爬取到user
-            self.write(WeiboCurlError.URL_ARGS_ERROR)  # 报告参数错误
+            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)  # 报告参数错误
             return
         self.write(success)
         return
@@ -302,12 +311,12 @@ class FriendsHandler(BaseHandler):
         args_dict = self.args2dict()
         user_id, cursor = args_dict.get('user_id'), args_dict.get('cursor', '1')
         if user_id is None:
-            self.write(WeiboCurlError.URL_LACK_ARGS)
+            self.write(WeiboCurlError.REQUEST_LACK_ARGS)
             return
         try:
             cursor = 1 if not cursor else int(cursor)
         except ValueError:
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
         # 进行爬取
         follow_curl_result = yield weibo_web_curl(Aim.follow, user_id=user_id, page_num=cursor)
@@ -352,12 +361,12 @@ class FollowersHandler(BaseHandler):
         args_dict = self.args2dict()
         user_id, cursor = args_dict.get('user_id'), args_dict.get('cursor', '1')
         if user_id is None:
-            self.write(WeiboCurlError.URL_LACK_ARGS)
+            self.write(WeiboCurlError.REQUEST_LACK_ARGS)
             return
         try:
             cursor = 1 if cursor == 0 else int(cursor)
         except ValueError:  # 当对cursor转换产生错误时
-            self.write(WeiboCurlError.URL_ARGS_ERROR)
+            self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
         # 进行爬取
         fans_curl_result = yield weibo_web_curl(Aim.fans, user_id=user_id, page_num=cursor)
@@ -389,6 +398,29 @@ class FollowersHandler(BaseHandler):
         except Exception as e:
             const.LOGGING.error(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
+
+
+class AccountHandler(BaseHandler):
+    def post(self):
+        json_obj = self.get_json()
+        cookies, proxies = json_obj.get('cookies'), json_obj.get('proxies')
+
+        try:
+            account_pool.update(cookies, proxies)
+        except ValueError:
+            error = WeiboCurlError.REQUEST_ARGS_ERROR
+            error['error_msg'] += 'Cookies or proxies is an empty list.'
+            self.write(error)
+            return
+
+        success = const.SUCCESS.copy()
+        success['data'] = {
+            'result': account_pool.accounts,
+            'cursor': ''
+        }
+        self.write(success)
+        return
+
 
 
 define("port", default=const.PORT_NUM, help="run on the given port", type=int)

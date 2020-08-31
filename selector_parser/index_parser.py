@@ -57,9 +57,11 @@ class InfoParser:
         user = User()
         nickname = self.selector.xpath('//title/text()')[0]
         nickname = nickname[:-3]
+        # 检查cookie
         if nickname == u'登录 - 新' or nickname == u'新浪':
             LOGGING.warning(u'cookie错误或已过期')
             raise CookieInvalidException()
+
         user.nickname = nickname
         try:
             basic_info = self.selector.xpath("//div[@class='c'][3]/text()")

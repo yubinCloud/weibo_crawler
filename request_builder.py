@@ -2,6 +2,7 @@ import const
 from tornado.httpclient import HTTPRequest
 from tornado import  httpclient
 import enum
+from account.account import account_pool
 
 # httpclient.AsyncHTTPClient.configure('tornado.curl_httpclient.CurlAsyncHTTPClient')
 
@@ -15,10 +16,18 @@ class BaseRequestBuilder:
         return self.url
 
     def make_request(self, method='GET',with_cookie=True, **req_kwargs):
-#        proxy_host, proxy_port = const.get_proxy()
+        cookie, proxy = account_pool.fetch()
+        proxy_host, proxy_port = proxy[0], proxy[1]
+
+        if with_cookie:
+            headers = const.HEADERS_WITH_COOKIR
+            headers['Cookie'] = cookie
+        else:
+            headers = const.HEADERS
+
         req = HTTPRequest(url=self.get_url(), method=method,
 #                          proxy_host=proxy_host, proxy_port=proxy_port,
-                          headers=const.get_headers(with_cookie=with_cookie),
+                          headers=headers,
                           request_timeout=const.REQUEST_TIME_OUT, **req_kwargs)
         return req
 

@@ -1,14 +1,14 @@
 class WeiboCurlError:
     """各种微博爬取过程的错误类型"""
 
-    # URL缺少参数
-    URL_LACK_ARGS = {
+    # 请求缺少参数
+    REQUEST_LACK_ARGS = {
         'error_code': 2001,
         'error_msg': 'URL is lack of arguments.'
     }
 
-    # URL参数错误
-    URL_ARGS_ERROR = {
+    # 请求参数错误
+    REQUEST_ARGS_ERROR = {
         'error_code': 2002,
         'error_msg': 'URL args error.'
     }

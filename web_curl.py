@@ -1,25 +1,27 @@
 from tornado import gen
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from lxml import etree
-from enum import Enum, auto, unique
+from enum import Enum, unique
+import re
 
 import const
-import req_builder
+import request_builder
 from weibo_curl_error import WeiboCurlError
+
 
 
 @unique  # 确保枚举值唯一
 class Aim(Enum):
-    """枚举全部爬取目标"""
-    users_show = req_builder.UserIndexReqBuilder
-    users_info = req_builder.UserInfoReqBuilder
-    users_weibo_page = req_builder.UserWeiboPageReqBuilder
-    weibo_comment = req_builder.WeiboCommentReqBuilder
-    mblog_pic_all = req_builder.MblogPicAllReqBuilder
-    follow = req_builder.FollowsReqBuilder
-    fans = req_builder.FansReqBuilder
-    search_weibo = req_builder.SearchWeiboReqBuilder
-    search_users = req_builder.SearchUsersReqBuilder
+    """枚举全部爬取目标，每个目标的value为对应的RequestBuilder"""
+    users_show = request_builder.UserIndexReqBuilder
+    users_info = request_builder.UserInfoReqBuilder
+    users_weibo_page = request_builder.UserWeiboPageReqBuilder
+    weibo_comment = request_builder.WeiboCommentReqBuilder
+    mblog_pic_all = request_builder.MblogPicAllReqBuilder
+    follow = request_builder.FollowsReqBuilder
+    fans = request_builder.FansReqBuilder
+    search_weibo = request_builder.SearchWeiboReqBuilder
+    search_users = request_builder.SearchUsersReqBuilder
 
 
 @gen.coroutine
@@ -32,25 +34,30 @@ def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True,
     :return: 当参数use_bs4为True时返回bs4解析的soup，False时返回etree解析后的selector
     """
     global response
+    title_pattern = re.compile(r'<title>.*</title>')  # 用于寻找html中title部分的正则匹配pattern
     client = AsyncHTTPClient()
-    builder = curl_aim.value
-
+    RequestBuilder = curl_aim.value  # 将 curl_aim 转换成 RequestBuilder 类
 
     for epoch in range(retry_time):
-        req = builder(**kwargs).make_request(with_cookie=with_cookie)  # 获得 http request
+        req = RequestBuilder(**kwargs).make_request(with_cookie=with_cookie)  # 获得 http request
 
         try:
             response = yield client.fetch(req)
+            print(response.body)
+
+            # 检查是否Cookie失效
+            try:
+                title = title_pattern.search(response.body.decode('gbk')).group(0)
+                if title == '<title>新浪通行证</title>':
+                    const.LOGGING.error('Cookie错误或失效! 失效Cookie为{}'.format(req.headers.get('Cookie')))
+                    return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(req.headers.get('Cookie'))}
+            except (UnicodeDecodeError, AttributeError):
+                pass
+
         except HTTPError as e:
             const.LOGGING.warning('A HTTPError occurred:{} [{}, {}]'.format(e, curl_aim, kwargs))
-            if e.get('code') == 404:
-                return {'error_code': 2, 'errmsg': "Can't find page: {}".format(req.url)}
-            elif e.get('code') == 559:  # 超时错误
-                pass  # 再次通过builder构造request时会重新获得proxy
-                continue
-            else:
-                print('test')
 
+        # 根据 http code 返回对应的信息
         http_code = response.code
         if http_code == 200:
             return {'error_code': 0, 'selector': etree.HTML(response.body)}
@@ -67,20 +74,17 @@ def curl_result_to_api_result(curl_result):
     将 weibo_web_curl 返回的错误结果进行处理获得对应的错误信息
     """
     error_code = curl_result.get('error_code')
+    # 将 error_code 转化为 WeiboCurlError 中的错误信息结果
+    code_to_res = {
+        1: lambda : WeiboCurlError.ABNORMAL_HTTP_CODE.copy(),
+        2: lambda : WeiboCurlError.REQUEST_ARGS_ERROR.copy(),
+        3: lambda : WeiboCurlError.COOKIE_INVALID.copy(),
+        4: lambda : WeiboCurlError.IP_INVALID.copy(),
+    }
 
-    if error_code == 1:
-        error_res = WeiboCurlError.ABNORMAL_HTTP_CODE.copy()
-        error_res['error_msg'] += curl_result.get('errmsg')
-    elif error_code == 2:
-        error_res = WeiboCurlError.URL_ARGS_ERROR.copy()
-        error_res['error_msg'] += curl_result.get('errmsg')
-    elif error_code == 3:
-        error_res = WeiboCurlError.COOKIE_INVALID.copy()
-        error_res['error_msg'] += curl_result.get('errmsg')
-    elif error_code == 4:
-        error_res = WeiboCurlError.IP_INVALID.copy()
+    error_res = code_to_res.get(error_code)()
+    if error_res is not None:
         error_res['error_msg'] += curl_result.get('errmsg')
     else:
         error_res = WeiboCurlError.UNKNOWN_ERROR.copy()
-
     return error_res

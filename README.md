@@ -299,6 +299,19 @@ followe_list中每个粉丝代表的dict的格式：
 
 example 与朋友列表接口返回的一样。
 
+### 8. 账号设置接口
+
++ 请求方式：post
+
++ 路由： `\weibo_curl\api\update_account`
+
+#### 请求的json格式
+
+| key     | value type  | description                         | example        |
+| ------- | ----------- | ----------------------------------- | -------------- |
+| cookies | list / null | 更新cookies的列表，为null表示不更新 | ['...', '...'] |
+| proxies | list / null | 更新proxies的列表，为null表示不更新 | ['...', '...'] |
+
 ## 错误类型
 
 ```
