@@ -1,13 +1,14 @@
 from const import LOGGING
 import utils
+from .base_parser import BaseParser
 
-
-class FollowParser:
+class FollowParser(BaseParser):
     """
     解析关注列表页
     """
-    def __init__(self, follow_selector):
-        self.selector = follow_selector
+    def __init__(self, response):
+        super().__init__(response)
+
 
     def get_follows(self):
         """获取本页全部follow的信息"""

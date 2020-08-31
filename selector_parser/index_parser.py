@@ -2,12 +2,13 @@ import sys
 
 from const import LOGGING
 from weibo_curl_error import CookieInvalidException
+from .base_parser import BaseParser
 
-
-class IndexParser:
-    def __init__(self, user_id, index_selector):
+class IndexParser(BaseParser):
+    def __init__(self, user_id, response):
+        super().__init__(response)
         self.user_id = user_id
-        self.selector = index_selector
+
 
     def get_user_id(self):
         """获取用户id，使用者输入的user_id不一定是正确的，可能是个性域名等，需要获取真正的user_id"""
@@ -52,9 +53,9 @@ class IndexParser:
 
 
 
-class InfoParser:
-    def __init__(self, info_selector):
-        self.selector = info_selector
+class InfoParser(BaseParser):
+    def __init__(self, response):
+        super().__init__(response)
 
     def extract_user_info(self):
         """提取用户信息"""

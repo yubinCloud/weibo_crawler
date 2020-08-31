@@ -11,12 +11,12 @@ import utils
 from const import LOGGING
 from web_curl import Aim, weibo_web_curl
 import const
+from .base_parser import BaseParser
 
-
-class PageParser:
-    def __init__(self, user_id, selector, filter):
+class PageParser(BaseParser):
+    def __init__(self, user_id, response, filter):
+        super.__init__(response)
         self.user_id = user_id
-        self.selector = selector
         self.filter = filter  # 值为1代表爬取全部原创微博，0代表爬取全部微博（原创+转发）
 
     @gen.coroutine

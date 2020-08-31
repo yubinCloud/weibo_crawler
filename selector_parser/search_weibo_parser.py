@@ -4,10 +4,12 @@ from urllib.parse import unquote
 from const import LOGGING
 import utils
 from weibo_curl_error import CookieInvalidException
+from .base_parser import BaseParser
 
-class SearchWeiboParser:
-    def __init__(self, search_weibo_selector):
-        self.selector = search_weibo_selector
+class SearchWeiboParser(BaseParser):
+    def __init__(self, response):
+        super().__init__(response)
+
 
     def parse_page(self):
         """

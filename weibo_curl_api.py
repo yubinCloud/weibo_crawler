@@ -60,13 +60,13 @@ class SearchTweetsHandler(BaseHandler):
         search_weibo_curl_result = yield weibo_web_curl(Aim.search_weibo,
                                                         keyword=keyword, page_num=cursor, is_hot=is_hot)
         if not search_weibo_curl_result['error_code']:
-            self.selector = search_weibo_curl_result['selector']
+            self.response = search_weibo_curl_result['response']
         else:
             error_res = curl_result_to_api_result(search_weibo_curl_result)
             self.write(error_res)
             return
         # 构建解析器
-        searchWeiboParser = SearchWeiboParser(self.selector)
+        searchWeiboParser = SearchWeiboParser(self.response)
         # 获取微博信息
         weibo_list = searchWeiboParser.parse_page()
         if weibo_list is None:
@@ -107,13 +107,13 @@ class StatusesShowHandler(BaseHandler):
 
         comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=weibo_id, page_num=cursor)
         if not comment_curl_result['error_code']:
-            self.selector = comment_curl_result['selector']
+            self.response = comment_curl_result['response']
         else:
             error_res = curl_result_to_api_result(comment_curl_result)
             self.write(error_res)
             return
 
-        commonParser = CommentParser(weibo_id, selector=self.selector)
+        commonParser = CommentParser(weibo_id, selector=self.response)
 
         try:
             is_original = commonParser.is_original()
@@ -170,13 +170,13 @@ class SearchUsersHandler(BaseHandler):
         search_users_curl_result = yield weibo_web_curl(Aim.search_users, keyword=keyword, user_type=user_type,
                                                         gender=gender, age_limit=age_limit, page_num=cursor)
         if not search_users_curl_result['error_code']:
-            self.selector = search_users_curl_result['selector']
+            self.response = search_users_curl_result['response']
         else:
             error_res = curl_result_to_api_result(search_users_curl_result)
             self.write(error_res)
             return
         # 构建解析器
-        searchUsersParser = SearchUsersParser(self.selector)
+        searchUsersParser = SearchUsersParser(self.response)
         # 提取信息
         user_list = searchUsersParser.parse_page()
         # 返回信息
@@ -208,7 +208,7 @@ class UsersShowHandler(BaseHandler):
         try:
             idx_curl_result = yield weibo_web_curl(Aim.users_show, user_id=user_id)  # 爬取主页的结果
             if not idx_curl_result['error_code']:
-                idxParser = IndexParser(user_id, idx_curl_result.get('selector'))  # 构建一个主页解析器
+                idxParser = IndexParser(user_id, idx_curl_result.get('response'))  # 构建一个主页解析器
 
                 try:
                     user_id = idxParser.get_user_id()  # 获取到真正的user_id
@@ -218,7 +218,7 @@ class UsersShowHandler(BaseHandler):
 
                 info_curl_result = yield weibo_web_curl(Aim.users_info, user_id=user_id)  # 爬取信息页的结果
                 if not info_curl_result['error_code']:
-                    infoParser = InfoParser(info_curl_result.get('selector'))  # 信息页解析器
+                    infoParser = InfoParser(info_curl_result.get('response'))  # 信息页解析器
                     user_info = infoParser.extract_user_info()
                     user = idxParser.get_user(user_info)
                     print(user.__dict__)
@@ -272,7 +272,7 @@ class UserTimelineHandler(BaseHandler):
 
         page_curl_result = yield weibo_web_curl(Aim.users_weibo_page, user_id=user_id, page_num=cursor)
         if not page_curl_result['error_code']:
-            pageParser = PageParser(user_id, page_curl_result['selector'], filter)
+            pageParser = PageParser(user_id, page_curl_result['response'], filter)
         else:
             error_res = curl_result_to_api_result(page_curl_result)
             self.write(error_res)
@@ -317,13 +317,13 @@ class FriendsHandler(BaseHandler):
         # 进行爬取
         follow_curl_result = yield weibo_web_curl(Aim.follow, user_id=user_id, page_num=cursor)
         if not follow_curl_result['error_code']:
-            self.selector = follow_curl_result['selector']
+            self.response = follow_curl_result['response']
         else:
             error_res = curl_result_to_api_result(follow_curl_result)
             self.write(error_res)
             return
         # 构建解析器
-        followParser = FollowParser(self.selector)
+        followParser = FollowParser(self.response)
         # 提取相关信息并返回结果
         try:
             follow_list = followParser.get_follows()  # 关注者的列表
@@ -367,13 +367,13 @@ class FollowersHandler(BaseHandler):
         # 进行爬取
         fans_curl_result = yield weibo_web_curl(Aim.fans, user_id=user_id, page_num=cursor)
         if not fans_curl_result['error_code']:
-            self.selector = fans_curl_result['selector']
+            self.response = fans_curl_result['response']
         else:
             error_res = curl_result_to_api_result(fans_curl_result)
             self.write(error_res)
             return
         # 构建解析器
-        fansParser = FansParser(self.selector)
+        fansParser = FansParser(self.response)
         # 提取相关信息并返回结果
         try:
             fans_list = fansParser.get_fans()

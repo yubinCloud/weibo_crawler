@@ -1,8 +1,8 @@
 from const import LOGGING
+from .base_parser import BaseParser
 
 
-
-class SearchUsersParser:
+class SearchUsersParser(BaseParser):
     """搜索用户页面的解析器"""
 
     USER_TEMPLATE = {
@@ -26,8 +26,9 @@ class SearchUsersParser:
         """生成一个用来存储一个user信息的dict"""
         return SearchUsersParser.USER_TEMPLATE.copy()
 
-    def __init__(self, search_users_selector):
-        self.selector = search_users_selector
+    def __init__(self, response):
+        super().__init__(response)
+
 
     def parse_page(self):
         """解析网页"""

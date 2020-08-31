@@ -60,7 +60,7 @@ def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True,
         # 根据 http code 返回对应的信息
         http_code = response.code
         if http_code == 200:
-            return {'error_code': 0, 'selector': etree.HTML(response.body)}
+            return {'error_code': 0, 'response': response}
         elif http_code == 302 or http_code == 403:  # Cookie 失效
             return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(req.headers.get('Cookie'))}
         elif http_code == 418:  # ip失效，偶尔产生，需要再次请求

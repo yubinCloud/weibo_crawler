@@ -1,13 +1,13 @@
 from const import LOGGING
 import utils
+from .base_parser import BaseParser
 
-
-class FansParser:
+class FansParser(BaseParser):
     """
     解析粉丝列表页
     """
-    def __init__(self, fans_selector):
-        self.selector = fans_selector
+    def __init__(self, response):
+        super().__init__(response)
 
     def get_fans(self):
         fans_list = list()
