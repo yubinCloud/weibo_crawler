@@ -3,12 +3,14 @@ from tornado import web,gen, httpserver
 import tornado.options
 from tornado.options import define, options
 import json
+import sys
 
 from selector_parser import *
 import const
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
-from weibo_curl_error import WeiboCurlError, CookieInvalidException
+from weibo_curl_error import WeiboCurlError, CookieInvalidException, HTMLParseException
 from account.account import account_pool
+
 
 class BaseHandler(tornado.web.RequestHandler):
     def write(self, dict_data: dict):
@@ -68,7 +70,12 @@ class SearchTweetsHandler(BaseHandler):
         # 构建解析器
         searchWeiboParser = SearchWeiboParser(self.response)
         # 获取微博信息
-        weibo_list = searchWeiboParser.parse_page()
+        try:
+            weibo_list = searchWeiboParser.parse_page()
+        except HTMLParseException:
+            self.write(WeiboCurlError.HTML_PARSE_ERROR)
+            return
+
         if weibo_list is None:
             self.write(WeiboCurlError.PAGE_NOT_FOUND)  # 页面找不到
             return
@@ -113,7 +120,7 @@ class StatusesShowHandler(BaseHandler):
             self.write(error_res)
             return
 
-        commonParser = CommentParser(weibo_id, selector=self.response)
+        commonParser = CommentParser(weibo_id, response=self.response)
 
         try:
             is_original = commonParser.is_original()
@@ -124,26 +131,30 @@ class StatusesShowHandler(BaseHandler):
 
             user_id, user_name = commonParser.get_user()
             comment_list = commonParser.get_all_comment()
-
-
-            success = const.SUCCESS.copy()
-            success['data'] = {
-                'result': {
-                    'weibo_id': weibo_id,
-                    'user_id': user_id,
-                    'user_name': user_name,
-                    'original': is_original,
-                    'weibo_content': weibo_content,
-                    'comments': comment_list
-                },
-                'cursor': ''
-            }
-            print(success)
-            self.write(success)
+        except HTMLParseException:
+            self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
+            const.LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             self.write(WeiboCurlError.UNKNOWN_ERROR)
-            const.LOGGING.error(e)
+            return
+
+        success = const.SUCCESS.copy()
+        success['data'] = {
+            'result': {
+                'weibo_id': weibo_id,
+                'user_id': user_id,
+                'user_name': user_name,
+                'original': is_original,
+                'weibo_content': weibo_content,
+                'comments': comment_list
+            },
+            'cursor': ''
+        }
+        print(success)
+        self.write(success)
+        return
 
 
 class SearchUsersHandler(BaseHandler):
@@ -178,7 +189,11 @@ class SearchUsersHandler(BaseHandler):
         # 构建解析器
         searchUsersParser = SearchUsersParser(self.response)
         # 提取信息
-        user_list = searchUsersParser.parse_page()
+        try:
+            user_list = searchUsersParser.parse_page()
+        except HTMLParseException:
+            self.write(WeiboCurlError.HTML_PARSE_ERROR)
+            return
         # 返回信息
         if user_list:
             success = const.SUCCESS.copy()
@@ -243,8 +258,12 @@ class UsersShowHandler(BaseHandler):
                 self.write(error_res)
                 return
 
+        except HTMLParseException:
+            self.write(WeiboCurlError.HTML_PARSE_ERROR)
+            return
         except Exception as e:
-            const.LOGGING.error('{} occur a error: {}'.format(self.__class__, e))
+            const.LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             self.write(WeiboCurlError.UNKNOWN_ERROR)
             return
 
@@ -277,7 +296,12 @@ class UserTimelineHandler(BaseHandler):
             error_res = curl_result_to_api_result(page_curl_result)
             self.write(error_res)
             return
-        weibos, weibo_id_list = yield pageParser.get_one_page()
+
+        try:
+            weibos, weibo_id_list = yield pageParser.get_one_page()
+        except HTMLParseException:
+            self.write(WeiboCurlError.HTML_PARSE_ERROR)
+            return
 
         for weibo in weibos:
             print(weibo.__dict__)
@@ -341,6 +365,9 @@ class FriendsHandler(BaseHandler):
             print(success)
             self.write(success)
             return
+        except HTMLParseException:
+            self.write(WeiboCurlError.HTML_PARSE_ERROR)
+            return
         except Exception as e:
             const.LOGGING.error(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
@@ -390,6 +417,10 @@ class FollowersHandler(BaseHandler):
             }
             print(success)
             self.write(success)
+            return
+
+        except HTMLParseException:
+            self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
             const.LOGGING.error(e)
