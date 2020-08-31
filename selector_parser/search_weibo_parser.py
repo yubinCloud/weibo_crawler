@@ -1,9 +1,10 @@
 import re
+import sys
 from urllib.parse import unquote
 
 from const import LOGGING
 import utils
-from weibo_curl_error import CookieInvalidException
+from weibo_curl_error import CookieInvalidException, HTMLParseError
 from .base_parser import BaseParser
 
 class SearchWeiboParser(BaseParser):
@@ -21,11 +22,11 @@ class SearchWeiboParser(BaseParser):
             return None
         try:
             weibo_list = self._get_all_weibo()
+            return weibo_list
         except Exception as e:
-            print(e)
-            LOGGING.warning(e)
-            weibo_list = None
-        return weibo_list
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
 
     def _get_all_weibo(self):

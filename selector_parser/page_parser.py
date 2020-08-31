@@ -13,6 +13,8 @@ from const import LOGGING
 from web_curl import Aim, weibo_web_curl
 import const
 from .base_parser import BaseParser
+from weibo_curl_error import HTMLParseError
+
 
 class PageParser(BaseParser):
     def __init__(self, user_id, response, filter):
@@ -40,8 +42,9 @@ class PageParser(BaseParser):
                         weibo_id_list.append(weibo.weibo_id)
             return weibos, weibo_id_list
         except Exception as e:
-            print(e)
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     def is_original(self, info):
         """判断微博是否为原创微博"""
@@ -64,7 +67,9 @@ class PageParser(BaseParser):
                     weibo_content = wb_content
             return dict(weibo_content=weibo_content)
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     @gen.coroutine
     def get_retweet(self, info, weibo_id):
@@ -102,7 +107,9 @@ class PageParser(BaseParser):
                 }
             return content_info
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     @gen.coroutine
     def get_weibo_content(self, info, is_original):
@@ -115,7 +122,9 @@ class PageParser(BaseParser):
                 weibo_content_info = yield self.get_retweet(info, weibo_id)
             return weibo_content_info
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     def get_article_url(self, info):
         """获取微博头条文章的url"""
@@ -149,7 +158,9 @@ class PageParser(BaseParser):
                         break
             return publish_place
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     def get_publish_time(self, info):
         """获取微博发布时间"""
@@ -180,7 +191,9 @@ class PageParser(BaseParser):
                 publish_time = publish_time[:16]
             return publish_time
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     def get_publish_tool(self, info):
         """获取微博发布工具"""
@@ -193,7 +206,9 @@ class PageParser(BaseParser):
                 publish_tool = u'无'
             return publish_tool
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     def get_weibo_footer(self, info):
         """获取微博点赞数、转发数、评论数"""
@@ -215,7 +230,9 @@ class PageParser(BaseParser):
             footer['comment_num'] = comment_num
             return footer
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     @gen.coroutine
     def get_picture_urls(self, info, is_original):
@@ -242,7 +259,9 @@ class PageParser(BaseParser):
                 picture_urls['original_pictures'] = original_picture
             return picture_urls
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     def get_video_url(self, info, is_original):
         """获取微博视频url"""
@@ -269,7 +288,8 @@ class PageParser(BaseParser):
                             video_url = u'无'
             return video_url
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             return u'无'
 
     def is_pinned_weibo(self, info):
@@ -313,7 +333,9 @@ class PageParser(BaseParser):
                 LOGGING.info(u'正在过滤转发微博')
             return weibo
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     @gen.coroutine
     def extract_picture_urls(self, info, weibo_id):
@@ -352,7 +374,8 @@ class PageParser(BaseParser):
                         sys.exit()
             return picture_urls
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             return u'无'
 
 
@@ -426,9 +449,10 @@ class CommentParser(BaseParser):
                     if weibo_content is not None:
                         return weibo_content
                 sleep(random.randint(6, 10))
-        except Exception:
-            LOGGING.exception(u'网络出错')
-            return u'网络出错'
+        except Exception as e:
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     @gen.coroutine
     def get_long_retweet(self, rev_type=str):
@@ -446,7 +470,9 @@ class CommentParser(BaseParser):
             return '转发原文：{}\n转发理由：{}'.format(retweet_content, retweet_reason)
 
         except Exception as e:
-            LOGGING.exception(e)
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
     def get_footer(self):
         """获取转发量、评论数、赞"""

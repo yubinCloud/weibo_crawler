@@ -64,3 +64,12 @@ class CookieInvalidException(WeiboException):
 
     def __repr__(self):
         return 'Cookie invalid.'
+
+
+class HTMLParseError(WeiboException):
+    """HTML页面解析出错"""
+    def __init__(self):
+        super().__init__()
+
+    def __repr__(self):
+        return "Error parsing HTML page."

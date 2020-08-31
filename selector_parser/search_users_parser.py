@@ -1,6 +1,8 @@
+import sys
+
 from const import LOGGING
 from .base_parser import BaseParser
-
+from weibo_curl_error import HTMLParseError
 
 class SearchUsersParser(BaseParser):
     """搜索用户页面的解析器"""
@@ -34,11 +36,11 @@ class SearchUsersParser(BaseParser):
         """解析网页"""
         try:
             user_list = self._get_all_user()
+            return user_list
         except Exception as e:
-            print(e)
-            LOGGING.warning(e)
-            user_list = None
-        return user_list
+            LOGGING.warning('{} occur a error: {}'.format(
+                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            raise HTMLParseError
 
 
     def _get_all_user(self):
