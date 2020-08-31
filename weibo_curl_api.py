@@ -400,7 +400,12 @@ class FollowersHandler(BaseHandler):
             self.write(WeiboCurlError.UNKNOWN_ERROR)
 
 
-class AccountHandler(BaseHandler):
+class AccountUpdateHandler(BaseHandler):
+    """
+    账号更新接口
+        说明：接收一个包含有cookie和proxy的json文件并更新程序运行时向微博发送请求所携带的cookie与proxy
+        路由：/weibo_curl/api/account
+    """
     def post(self):
         json_obj = self.get_json()
         cookies, proxies = json_obj.get('cookies'), json_obj.get('proxies')
@@ -436,7 +441,8 @@ if __name__ == '__main__':
         (ROUTE_PREFIX + r"friends_list", FriendsHandler),
         (ROUTE_PREFIX + r"followers_list", FollowersHandler),
         (ROUTE_PREFIX + r"search_tweets", SearchTweetsHandler),
-        (ROUTE_PREFIX + r"users_search", SearchUsersHandler)
+        (ROUTE_PREFIX + r"users_search", SearchUsersHandler),
+        (ROUTE_PREFIX + r"account_update", AccountUpdateHandler)
     ])
 
     http_server = tornado.httpserver.HTTPServer(app)

@@ -122,7 +122,7 @@ class Gender(enum.Enum):
 
 
 class AgeLimit(enum.Enum):
-    """搜索用户时的年龄限制"""
+    """枚举搜索用户时的年龄限制"""
     NO_LIMIT = ''  # 不限年龄
     BELOW_18 = '&age=18y'  # 18岁以下
     FROM_19_TO_22 = '&age=22y'  # 19-22岁

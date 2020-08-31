@@ -19,10 +19,10 @@ class AccountPool:
         if type(cookies) is not list or type(proxies) is not list:
             raise TypeError
 
-        self.cookies = cookies
-        self.proxies = proxies
+        self.__cookies = cookies
+        self.__proxies = proxies
         self.accounts = list()
-        self.count = 0
+        self.__count = 0
         self._compound_accounts()
 
     def __repr__(self):
@@ -30,26 +30,29 @@ class AccountPool:
 
     def _compound_accounts(self):
         """根据cookies和proxies合成所有Account对象"""
-        cookies_len = len(self.cookies)
-        proxies_len = len(self.proxies)
+        cookies_len = len(self.__cookies)
+        proxies_len = len(self.__proxies)
         max_len = max(cookies_len, proxies_len)
 
         self.accounts.clear()
         for i in range(max_len):
-            account = Account(self.cookies[i % cookies_len], self.proxies[i % proxies_len])
+            account = Account(self.__cookies[i % cookies_len], self.__proxies[i % proxies_len])
             self.accounts.append(account)
 
     def update(self, new_cookies=None, new_proxies=None):
         """对信息进行更新"""
-        if new_cookies is not None and len(new_cookies) == 0:
-            raise ValueError
-        if new_proxies is not None and len(new_proxies) == 0:
-            raise ValueError
 
-        if new_cookies:
-            self.cookies = new_cookies
+        # 检查new_cookies和new_proxies是否为list或None
+        if not isinstance(new_cookies, list) and new_cookies is not None:
+            raise ValueError
+        if not isinstance(new_proxies, list) and new_proxies is not None:
+            raise ValueError
+        # 分别进行更新
+        if new_cookies:  # 如果new_cookies不是None就进行更新
+            self.__cookies = new_cookies
         if new_proxies:
             self.accounts = new_proxies
+        # 将更新后的cookie和proxy进行配对复合成多个account
         self._compound_accounts()
 
     def update_one_cookie(self, seq_num, new_cookie):
@@ -75,9 +78,9 @@ class AccountPool:
 
     def fetch(self):
         """获取一个账号的cookie和代理"""
-        self.count += 1
-        self.count = self.count % len(self.accounts)
-        account = self.accounts[self.count]
+        self.__count += 1
+        self.__count = self.__count % len(self.accounts)
+        account = self.accounts[self.__count]
         return account.cookie, account.proxy
 
 
