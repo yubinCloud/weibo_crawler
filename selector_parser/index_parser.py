@@ -1,6 +1,6 @@
 import sys
 
-from const import LOGGING
+from setting import LOGGING
 from weibo_curl_error import CookieInvalidException, HTMLParseException
 from .base_parser import BaseParser
 

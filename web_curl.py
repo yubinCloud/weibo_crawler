@@ -3,7 +3,7 @@ from tornado.httpclient import AsyncHTTPClient, HTTPError
 from enum import Enum, unique
 import re
 
-import const
+import setting
 import request_builder
 from weibo_curl_error import WeiboCurlError
 
@@ -24,7 +24,7 @@ class Aim(Enum):
 
 
 @gen.coroutine
-def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True, **kwargs):
+def weibo_web_curl(curl_aim: Aim, retry_time=setting.RETRY_TIME, with_cookie=True, **kwargs):
     """
     根据爬取的目标对相对应的网站发送request请求并获得response
     :param curl_aim: 爬取的目标，其值必须为Aim枚举值
@@ -48,13 +48,13 @@ def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True,
                 title_pattern = re.compile(r'<title>.*</title>')  # 用于寻找html中title部分的正则匹配pattern
                 html_title = title_pattern.search(response.body.decode('gbk')).group(0)
                 if html_title == '<title>新浪通行证</title>':
-                    const.LOGGING.error('Cookie错误或失效! 失效Cookie为{}'.format(request.headers.get('Cookie')))
+                    setting.LOGGING.error('Cookie错误或失效! 失效Cookie为{}'.format(request.headers.get('Cookie')))
                     return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(request.headers.get('Cookie'))}
             except (UnicodeDecodeError, AttributeError):
                 pass
 
         except HTTPError as e:
-            const.LOGGING.warning('A HTTPError occurred:{} [{}, {}]'.format(e, curl_aim, kwargs))
+            setting.LOGGING.warning('A HTTPError occurred:{} [{}, {}]'.format(e, curl_aim, kwargs))
 
         # 根据 http code 返回对应的信息
         http_code = response.code

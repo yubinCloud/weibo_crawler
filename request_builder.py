@@ -1,4 +1,4 @@
-import const
+import setting
 from tornado.httpclient import HTTPRequest
 from tornado import  httpclient
 import enum
@@ -20,15 +20,15 @@ class BaseRequestBuilder:
         proxy_host, proxy_port = proxy[0], proxy[1]
 
         if with_cookie:
-            headers = const.HEADERS_WITH_COOKIR
+            headers = setting.HEADERS_WITH_COOKIR
             headers['Cookie'] = cookie
         else:
-            headers = const.HEADERS
+            headers = setting.HEADERS
 
         req = HTTPRequest(url=self.get_url(), method=method,
-#                          proxy_host=proxy_host, proxy_port=proxy_port,
+                          #                          proxy_host=proxy_host, proxy_port=proxy_port,
                           headers=headers,
-                          request_timeout=const.REQUEST_TIME_OUT, **req_kwargs)
+                          request_timeout=setting.REQUEST_TIME_OUT, **req_kwargs)
         return req
 
 

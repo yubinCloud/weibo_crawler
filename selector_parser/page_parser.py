@@ -9,9 +9,9 @@ from tornado import gen
 import requests
 
 import utils
-from const import LOGGING
+from setting import LOGGING
 from web_curl import Aim, weibo_web_curl
-import const
+import setting
 from .base_parser import BaseParser
 from weibo_curl_error import HTMLParseException
 
@@ -279,7 +279,7 @@ class PageParser(BaseParser):
                 if video_link != u'无':
                     video_link = video_link.replace(
                         'm.weibo.cn/s/video/show', 'm.weibo.cn/s/video/object')
-                    wb_info = requests.get(video_link, headers=const.get_headers()).json()
+                    wb_info = requests.get(video_link, headers=setting.get_headers()).json()
                     video_url = wb_info['data']['object']['stream'].get(
                         'hd_url')
                     if not video_url:

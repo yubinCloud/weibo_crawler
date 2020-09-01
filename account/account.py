@@ -1,4 +1,4 @@
-from const import LOGGING
+from setting import LOGGING
 import json
 
 class Account:

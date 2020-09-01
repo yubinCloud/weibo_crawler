@@ -1,4 +1,4 @@
-from const import LOGGING
+from setting import LOGGING
 import utils
 from .base_parser import BaseParser
 
