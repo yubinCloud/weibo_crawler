@@ -46,7 +46,8 @@ class PageParser(BaseParser):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             raise HTMLParseException
 
-    def is_original(self, info):
+    @staticmethod
+    def is_original(info):
         """判断微博是否为原创微博"""
         is_original = info.xpath("div/span[@class='cmt']")
         if len(is_original) > 3:
@@ -91,7 +92,6 @@ class PageParser(BaseParser):
             # 提取原始用户
             original_user = info.xpath("div/span[@class='cmt']/a/text()")
 
-            content_info = None  # 微博内容信息
             if original_user:
                 original_user = original_user[0]
                 content_info = {
@@ -126,7 +126,8 @@ class PageParser(BaseParser):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             raise HTMLParseException
 
-    def get_article_url(self, info):
+    @staticmethod
+    def get_article_url(info):
         """获取微博头条文章的url"""
         article_url = ''
         text = utils.handle_garbled(info)
@@ -162,7 +163,8 @@ class PageParser(BaseParser):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             raise HTMLParseException
 
-    def get_publish_time(self, info):
+    @staticmethod
+    def get_publish_time(info):
         """获取微博发布时间"""
         try:
             str_time = info.xpath("div/span[@class='ct']")
@@ -195,7 +197,8 @@ class PageParser(BaseParser):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             raise HTMLParseException
 
-    def get_publish_tool(self, info):
+    @staticmethod
+    def get_publish_tool(info):
         """获取微博发布工具"""
         try:
             str_time = info.xpath("div/span[@class='ct']")
@@ -210,7 +213,8 @@ class PageParser(BaseParser):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             raise HTMLParseException
 
-    def get_weibo_footer(self, info):
+    @staticmethod
+    def get_weibo_footer(info):
         """获取微博点赞数、转发数、评论数"""
         try:
             footer = {}
@@ -263,7 +267,8 @@ class PageParser(BaseParser):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             raise HTMLParseException
 
-    def get_video_url(self, info, is_original):
+    @staticmethod
+    def get_video_url(info, is_original):
         """获取微博视频url"""
         try:
             video_url = u'无'
@@ -279,7 +284,7 @@ class PageParser(BaseParser):
                 if video_link != u'无':
                     video_link = video_link.replace(
                         'm.weibo.cn/s/video/show', 'm.weibo.cn/s/video/object')
-                    wb_info = requests.get(video_link, headers=settings.get_headers()).json()
+                    wb_info = requests.get(video_link, headers=settings.HEADERS).json()
                     video_url = wb_info['data']['object']['stream'].get(
                         'hd_url')
                     if not video_url:
@@ -292,7 +297,8 @@ class PageParser(BaseParser):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             return u'无'
 
-    def is_pinned_weibo(self, info):
+    @staticmethod
+    def is_pinned_weibo(info):
         """判断微博是否为置顶微博"""
         kt = info.xpath(".//span[@class='kt']/text()")
         if kt and kt[0] == u'置顶':
@@ -309,8 +315,7 @@ class PageParser(BaseParser):
             is_original = self.is_original(info)
             if (not self.filter) or is_original:
                 weibo.weibo_id = info.xpath('@id')[0][2:]
-                weibo.content = yield self.get_weibo_content(info,
-                                                       is_original)  # 微博内容
+                weibo.content = yield self.get_weibo_content(info, is_original)  # 微博内容
                 weibo.article_url = self.get_article_url(info)  # 头条文章url
                 picture_urls = yield self.get_picture_urls(info, is_original)
                 weibo.original_pictures = picture_urls[
@@ -428,7 +433,6 @@ class BaseCommentParser(BaseParser):
         super().__init__(response)
         self.weibo_id = weibo_id
 
-
     def get_all_comment(self):
         """获取评论"""
         comment_list = list()
@@ -476,9 +480,8 @@ class BaseCommentParser(BaseParser):
         user_node = node.xpath('./a')[0]
         comment['screen_name'] = user_node.xpath('./text()')[0]
         user_href = user_node.get('href')
-        comment['user_id'] = user_href[user_href.rfind(r'/') + 1: ]
+        comment['user_id'] = user_href[user_href.rfind(r'/') + 1:]
         return comment
-
 
 
 class CommentParser(BaseCommentParser):
@@ -518,7 +521,7 @@ class CommentParser(BaseCommentParser):
         try:
             wb_content = yield self.get_long_weibo()
             retweet_content = wb_content[:wb_content.find(u'原文转发')]  # 转发内容的原文
-            retweet_reason = wb_content[wb_content.find(u'转发理由:') + 5: ]  # 转发理由
+            retweet_reason = wb_content[wb_content.find(u'转发理由:') + 5:]  # 转发理由
 
             if rev_type is dict:
                 return {
@@ -562,18 +565,16 @@ class CommentParser(BaseCommentParser):
             res = self.selector.xpath('//*[@id="M_"]/div/span[@class="cmt"]')
             return True if len(res) == 0 else False
 
-
     def get_user(self):
         """获取用户的id和用户名"""
         user_node = self.selector.xpath('//*[@id="M_"]/div[1]/a')[0]
         user_id = user_node.get('href')
-        user_id = user_id[user_id.rfind(r'/') + 1: ]
+        user_id = user_id[user_id.rfind(r'/') + 1:]
         user_name = user_node.text
         return user_id, user_name
 
     def get_all_comment(self):
         return super().get_all_comment()
-
 
 
 class HotCommentParser(BaseCommentParser):
@@ -582,7 +583,6 @@ class HotCommentParser(BaseCommentParser):
     """
     def __init__(self, weibo_id, response):
         super().__init__(weibo_id, response)
-
 
     def get_all_comment(self):
         comment_list = super().get_all_comment()

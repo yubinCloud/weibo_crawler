@@ -10,4 +10,3 @@ class BaseParser:
             self.selector = etree.HTML(self.response.body)
         else:
             self.selector = None
-

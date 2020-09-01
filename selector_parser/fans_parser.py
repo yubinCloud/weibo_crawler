@@ -2,6 +2,7 @@ from settings import LOGGING
 import utils
 from .base_parser import BaseParser
 
+
 class FansParser(BaseParser):
     """
     解析粉丝列表页
@@ -18,9 +19,9 @@ class FansParser(BaseParser):
                 fans_list.append(a_fans)
         return fans_list
 
-    def get_one_fans(self, fans_node):
+    @staticmethod
+    def get_one_fans(fans_node):
         return utils.extract_from_one_table_node(fans_node)
-
 
     def get_max_page_num(self):
         """

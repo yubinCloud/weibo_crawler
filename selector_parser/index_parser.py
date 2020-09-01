@@ -10,7 +10,6 @@ class IndexParser(BaseParser):
         super().__init__(response)
         self.user_id = user_id
 
-
     def get_user_id(self):
         """获取用户id，使用者输入的user_id不一定是正确的，可能是个性域名等，需要获取真正的user_id"""
         user_id = self.user_id
@@ -42,16 +41,15 @@ class IndexParser(BaseParser):
     def get_page_num(self):
         """获取微博总页数"""
         try:
-            if self.selector.xpath("//input[@name='mp']") == []:
+            if not self.selector.xpath("//input[@name='mp']"):
                 page_num = 1
             else:
-                page_num = (int)(self.selector.xpath("//input[@name='mp']")
-                                 [0].attrib['value'])
+                page_num = int(self.selector.xpath("//input[@name='mp']")
+                               [0].attrib['value'])
             return page_num
         except Exception as e:
             LOGGING.warning('{} occur a error: {}'.format(
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
-
 
 
 class InfoParser(BaseParser):
@@ -85,17 +83,17 @@ class InfoParser(BaseParser):
                     "//div[@class='tip'][2]/text()")[0] == u'学习经历':
                 user.education = self.selector.xpath(
                     "//div[@class='c'][4]/text()")[0][1:].replace(
-                        u'\xa0', u' ')
+                    u'\xa0', u' ')
                 if self.selector.xpath(
                         "//div[@class='tip'][3]/text()")[0] == u'工作经历':
                     user.work = self.selector.xpath(
                         "//div[@class='c'][5]/text()")[0][1:].replace(
-                            u'\xa0', u' ')
+                        u'\xa0', u' ')
             elif self.selector.xpath(
                     "//div[@class='tip'][2]/text()")[0] == u'工作经历':
                 user.work = self.selector.xpath(
                     "//div[@class='c'][4]/text()")[0][1:].replace(
-                        u'\xa0', u' ')
+                    u'\xa0', u' ')
             return user
         except Exception as e:
             LOGGING.warning('{} occur a error: {}'.format(
@@ -132,5 +130,3 @@ class User():
         result += u'关注数: %d\n' % self.following
         result += u'粉丝数: %d\n' % self.followers
         return result
-
-

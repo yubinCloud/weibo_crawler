@@ -7,10 +7,10 @@ import utils
 from weibo_curl_error import CookieInvalidException, HTMLParseException
 from .base_parser import BaseParser
 
+
 class SearchWeiboParser(BaseParser):
     def __init__(self, response):
         super().__init__(response)
-
 
     def parse_page(self):
         """
@@ -28,7 +28,6 @@ class SearchWeiboParser(BaseParser):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             raise HTMLParseException
 
-
     def _get_all_weibo(self):
         """
         获取全部微博
@@ -38,7 +37,6 @@ class SearchWeiboParser(BaseParser):
             if weibo is not None:
                 weibo_list.append(weibo)
         return weibo_list
-
 
     def _parse_weibo(self):
         """解析网页中的微博信息"""
@@ -151,10 +149,7 @@ class SearchWeiboParser(BaseParser):
                     )[0]
                     retweet['user_id'] = info.xpath('@href')[0].split('/')[-1]
                     retweet['screen_name'] = info.xpath('@nick-name')[0]
-                    retweet['text'] = retweet_txt_sel.xpath(
-                        'string(.)').replace('\u200b',
-                                                             '').replace(
-                        '\ue627', '')
+                    retweet['text'] = retweet_txt_sel.xpath('string(.)').replace('\u200b', '').replace('\ue627', '')
                     retweet['article_url'] = self._get_article_url(retweet_txt_sel)
                     retweet['location'] = self._get_location(retweet_txt_sel)
                     if retweet['location']:
@@ -191,7 +186,8 @@ class SearchWeiboParser(BaseParser):
                 print(weibo)
                 yield weibo
 
-    def _get_article_url(self, selector):
+    @staticmethod
+    def _get_article_url(selector):
         """获取微博头条文章url"""
         article_url = ''
         text = selector.xpath('string(.)')[0].replace(
@@ -208,7 +204,8 @@ class SearchWeiboParser(BaseParser):
                     break
         return article_url
 
-    def _get_location(self, selector):
+    @staticmethod
+    def _get_location(selector):
         """获取微博发布位置"""
         a_list = selector.xpath('.//a')
         location = ''
@@ -219,7 +216,8 @@ class SearchWeiboParser(BaseParser):
                 break
         return location
 
-    def _get_at_users(self, selector):
+    @staticmethod
+    def _get_at_users(selector):
         """获取微博中@的用户昵称"""
         a_list = selector.xpath('.//a')
         at_list = []
@@ -233,7 +231,8 @@ class SearchWeiboParser(BaseParser):
                         at_list.append(at_user)
         return at_list
 
-    def _get_topics(self, selector):
+    @staticmethod
+    def _get_topics(selector):
         """获取参与的微博话题"""
         a_list = selector.xpath('.//a')
         topics = ''
@@ -246,4 +245,3 @@ class SearchWeiboParser(BaseParser):
         if topic_list:
             topics = ','.join(topic_list)
         return topics
-
