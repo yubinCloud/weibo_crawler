@@ -16,6 +16,7 @@ class Aim(Enum):
     users_info = request_builder.UserInfoReqBuilder
     users_weibo_page = request_builder.UserWeiboPageReqBuilder
     weibo_comment = request_builder.WeiboCommentReqBuilder
+    hot_comment = request_builder.HotCommentReqBuilder
     mblog_pic_all = request_builder.MblogPicAllReqBuilder
     follow = request_builder.FollowsReqBuilder
     fans = request_builder.FansReqBuilder

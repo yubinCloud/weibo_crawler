@@ -60,6 +60,13 @@ class WeiboCommentReqBuilder(BaseRequestBuilder):
         self.url = 'https://weibo.cn/comment/{}?page={}'.format(weibo_id, page_num)
 
 
+class HotCommentReqBuilder(BaseRequestBuilder):
+    """根据weibo_id获取该微博的热门评论的URL"""
+    def __init__(self, weibo_id, page_num=1):
+        super().__init__()
+        self.url = 'https://weibo.cn/comment/hot/{}?page={}'.format(weibo_id, page_num)
+
+
 class MblogPicAllReqBuilder(BaseRequestBuilder):
     """微博所有图片的URL"""
     def __init__(self, weibo_id):

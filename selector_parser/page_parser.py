@@ -422,10 +422,68 @@ class Weibo:
         return result
 
 
-class CommentParser(BaseParser):
+class BaseCommentParser(BaseParser):
+    """由于普通评论页面和热评页面的评论区构造相同，因此单独设置一个基类用来提取这部分评论区的信息"""
     def __init__(self, weibo_id, response=None):
         super().__init__(response)
         self.weibo_id = weibo_id
+
+
+    def get_all_comment(self):
+        """获取评论"""
+        comment_list = list()
+        all_div = self.selector.xpath('/html/body/div[@class="c"]')
+        for div in all_div:
+            id_value = div.get('id')
+            if id_value is not None and id_value.find('C_') != -1:
+                try:
+                    comment = CommentParser._parse_one_comment(div)
+                except Exception as e:
+                    LOGGING.warning(e)
+                    print(e)
+                    comment = None
+                if comment is not None:
+                    comment_list.append(comment)
+        return comment_list
+
+    COMMENT_TEMPLATE = {
+        'is_hot': False,  # 是否为热评
+        'user_id': None,  # 评论用户的id
+        'screen_name': None,  # 评论用户的用户名
+        'content': None,  # 评论内容
+        'like_num': None,  # 点赞数
+        'publish_info': None  # 发布信息（包括时间和发布工具）
+    }
+
+    @staticmethod
+    def _parse_one_comment(node):
+        comment = CommentParser.COMMENT_TEMPLATE.copy()
+        span_nodes = node.xpath('./span')
+        for span_node in span_nodes:
+            klass = span_node.get('class')
+            if klass == 'kt':
+                comment['is_hot'] = True
+            elif klass == 'ctt':
+                comment['content'] = ''.join(span_node.xpath('./text()'))
+            elif klass == 'cc':
+                text = ''.join(span_node.xpath('./a/text()'))
+                pos = text.find('赞')
+                if pos != -1:
+                    comment['like_num'] = text[pos + 2: -1]
+            elif klass == 'ct':
+                comment['publish'] = ''.join(span_node.xpath('./text()'))
+
+        user_node = node.xpath('./a')[0]
+        comment['screen_name'] = user_node.xpath('./text()')[0]
+        user_href = user_node.get('href')
+        comment['user_id'] = user_href[user_href.rfind(r'/') + 1: ]
+        return comment
+
+
+
+class CommentParser(BaseCommentParser):
+    def __init__(self, weibo_id, response=None):
+        super().__init__(weibo_id, response)
 
     @gen.coroutine
     def get_long_weibo(self):
@@ -514,53 +572,21 @@ class CommentParser(BaseParser):
         return user_id, user_name
 
     def get_all_comment(self):
-        """获取评论"""
-        comment_list = list()
-        all_div = self.selector.xpath('/html/body/div[@class="c"]')
-        for div in all_div:
-            id_value = div.get('id')
-            if id_value is not None and id_value.find('C_') != -1:
-                try:
-                    comment = CommentParser._parse_one_comment(div)
-                except Exception as e:
-                    LOGGING.warning(e)
-                    print(e)
-                    comment = None
-                if comment is not None:
-                    comment_list.append(comment)
+        return super().get_all_comment()
+
+
+
+class HotCommentParser(BaseCommentParser):
+    """
+    解析热评页
+    """
+    def __init__(self, weibo_id, response):
+        super().__init__(weibo_id, response)
+
+
+    def get_all_comment(self):
+        comment_list = super().get_all_comment()
+        # 当为热评页时，基类对一条评论是否为热评会判断错误，需要进行纠正
+        for comment in comment_list:
+            comment['is_hot'] = True
         return comment_list
-
-    COMMENT_TEMPLATE = {
-        'is_hot': False,  # 是否为热评
-        'user_id': None,  # 评论用户的id
-        'screen_name': None,  # 评论用户的用户名
-        'content': None,  # 评论内容
-        'like_num': None,  # 点赞数
-        'publish_info': None  # 发布信息（包括时间和发布工具）
-    }
-
-    @staticmethod
-    def _parse_one_comment(node):
-        comment = CommentParser.COMMENT_TEMPLATE.copy()
-        span_nodes = node.xpath('./span')
-        for span_node in span_nodes:
-            klass = span_node.get('class')
-            if klass == 'kt':
-                comment['is_hot'] = True
-            elif klass == 'ctt':
-                comment['content'] = ''.join(span_node.xpath('./text()'))
-            elif klass == 'cc':
-                text = ''.join(span_node.xpath('./a/text()'))
-                pos = text.find('赞')
-                if pos != -1:
-                    comment['like_num'] = text[pos + 2: -1]
-            elif klass == 'ct':
-                comment['publish'] = ''.join(span_node.xpath('./text()'))
-
-        user_node = node.xpath('./a')[0]
-        comment['screen_name'] = user_node.xpath('./text()')[0]
-        user_href = user_node.get('href')
-        comment['user_id'] = user_href[user_href.rfind(r'/') + 1: ]
-        return comment
-
-

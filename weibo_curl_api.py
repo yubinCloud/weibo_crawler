@@ -129,7 +129,6 @@ class StatusesShowHandler(BaseHandler):
                 weibo_content = yield commonParser.get_long_retweet(rev_type=dict)
 
             user_id, user_name = commonParser.get_user()
-            comment_list = commonParser.get_all_comment()
         except HTMLParseException:
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
@@ -138,6 +137,29 @@ class StatusesShowHandler(BaseHandler):
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             self.write(WeiboCurlError.UNKNOWN_ERROR)
             return
+
+        # 根据 hot 参数来确定获取 comment_list 的方式
+        if not hot:
+            comment_list = commonParser.get_all_comment()
+        else:
+            hot_comment_curl_result = yield weibo_web_curl(Aim.hot_comment, weibo_id=weibo_id, page_num=cursor)
+            if not hot_comment_curl_result['error_code']:
+                self.hot_comment_response = hot_comment_curl_result['response']
+            else:
+                error_res = curl_result_to_api_result(comment_curl_result)
+                self.write(error_res)
+                return
+
+            try:
+                comment_list = HotCommentParser(weibo_id, self.hot_comment_response).get_all_comment()
+            except HTMLParseException:
+                self.write(WeiboCurlError.HTML_PARSE_ERROR)
+                return
+            except Exception as e:
+                settings.LOGGING.warning('{} occur a error: {}'.format(
+                    '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+                self.write(WeiboCurlError.UNKNOWN_ERROR)
+                return
 
         success = settings.SUCCESS.copy()
         success['data'] = {
