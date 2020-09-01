@@ -1,4 +1,4 @@
-from setting import LOGGING
+from settings import LOGGING
 import json
 
 class Account:

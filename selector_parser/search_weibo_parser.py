@@ -2,7 +2,7 @@ import re
 import sys
 from urllib.parse import unquote
 
-from setting import LOGGING
+from settings import LOGGING
 import utils
 from weibo_curl_error import CookieInvalidException, HTMLParseException
 from .base_parser import BaseParser

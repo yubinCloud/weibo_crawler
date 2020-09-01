@@ -6,7 +6,7 @@ import json
 import sys
 
 from selector_parser import *
-import setting
+import settings
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError, CookieInvalidException, HTMLParseException
 from account.account import account_pool
@@ -79,7 +79,7 @@ class SearchTweetsHandler(BaseHandler):
             self.write(WeiboCurlError.PAGE_NOT_FOUND)  # 页面找不到
             return
         # 成功返回结果
-        success = setting.SUCCESS.copy()
+        success = settings.SUCCESS.copy()
         success['data'] = {
             'result': weibo_list,
             'cursor': str(cursor + 1)
@@ -134,12 +134,12 @@ class StatusesShowHandler(BaseHandler):
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
-            setting.LOGGING.warning('{} occur a error: {}'.format(
+            settings.LOGGING.warning('{} occur a error: {}'.format(
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             self.write(WeiboCurlError.UNKNOWN_ERROR)
             return
 
-        success = setting.SUCCESS.copy()
+        success = settings.SUCCESS.copy()
         success['data'] = {
             'result': {
                 'weibo_id': weibo_id,
@@ -195,7 +195,7 @@ class SearchUsersHandler(BaseHandler):
             return
         # 返回信息
         if user_list:
-            success = setting.SUCCESS.copy()
+            success = settings.SUCCESS.copy()
             success['data'] = {
                 'result': user_list,
                 'cursor': str(cursor + 1)
@@ -237,7 +237,7 @@ class UsersShowHandler(BaseHandler):
                     user = idxParser.get_user(user_info)
                     print(user.__dict__)
 
-                    success = setting.SUCCESS.copy()
+                    success = settings.SUCCESS.copy()
                     try:
                         success['data'] = {
                             'result': user.__dict__,
@@ -261,7 +261,7 @@ class UsersShowHandler(BaseHandler):
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
-            setting.LOGGING.warning('{} occur a error: {}'.format(
+            settings.LOGGING.warning('{} occur a error: {}'.format(
                 '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             self.write(WeiboCurlError.UNKNOWN_ERROR)
             return
@@ -305,7 +305,7 @@ class UserTimelineHandler(BaseHandler):
         for weibo in weibos:
             print(weibo.__dict__)
 
-        success = setting.SUCCESS.copy()
+        success = settings.SUCCESS.copy()
         try:
             success['data'] = {
                 'result': [weibo.__dict__ for weibo in weibos],
@@ -353,7 +353,7 @@ class FriendsHandler(BaseHandler):
             max_page_num = followParser.get_max_page_num()  # 总页数
             if cursor < max_page_num:
                 cursor = str(cursor + 1)
-            success = setting.SUCCESS.copy()
+            success = settings.SUCCESS.copy()
             success['data'] = {
                 'result': {
                     'friend_list': follow_list,
@@ -368,7 +368,7 @@ class FriendsHandler(BaseHandler):
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
-            setting.LOGGING.error(e)
+            settings.LOGGING.error(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
 
 
@@ -406,7 +406,7 @@ class FollowersHandler(BaseHandler):
             max_page_num = fansParser.get_max_page_num()
             if cursor < max_page_num:
                 cursor = str(cursor + 1)
-            success = setting.SUCCESS.copy()
+            success = settings.SUCCESS.copy()
             success['data'] = {
                 'result': {
                     'follower_list': fans_list,
@@ -422,7 +422,7 @@ class FollowersHandler(BaseHandler):
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
-            setting.LOGGING.error(e)
+            settings.LOGGING.error(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
 
 
@@ -444,7 +444,7 @@ class AccountUpdateHandler(BaseHandler):
             self.write(error)
             return
 
-        success = setting.SUCCESS.copy()
+        success = settings.SUCCESS.copy()
         success['data'] = {
             'result': account_pool.accounts,
             'cursor': ''
@@ -455,7 +455,7 @@ class AccountUpdateHandler(BaseHandler):
 
 # 启动主程序
 if __name__ == '__main__':
-    define("port", default=setting.PORT_NUM, help="run on the given port", type=int)  # 定义端口号
+    define("port", default=settings.PORT_NUM, help="run on the given port", type=int)  # 定义端口号
     ROUTE_PREFIX = r"/weibo_curl/api/"  # 路由前缀
 
     app = tornado.web.Application([

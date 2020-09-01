@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import sys
-from setting import LOGGING
+from settings import LOGGING
 from lxml import etree
 
 def handle_garbled(info):
