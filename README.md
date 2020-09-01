@@ -314,7 +314,7 @@ example 与朋友列表接口返回的一样。
 
 ## 错误类型
 
-```
+```python
     # URL缺少参数
     URL_LACK_ARGS = {
         'error_code': 2001,

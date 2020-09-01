@@ -11,7 +11,6 @@ from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError, CookieInvalidException, HTMLParseException
 from account.account import account_pool
 
-
 class BaseHandler(tornado.web.RequestHandler):
     def write(self, dict_data: dict):
         """在发送之前将编码方式转化成Unicode"""

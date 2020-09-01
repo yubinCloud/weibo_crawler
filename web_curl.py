@@ -1,6 +1,5 @@
 from tornado import gen
 from tornado.httpclient import AsyncHTTPClient, HTTPError
-from lxml import etree
 from enum import Enum, unique
 import re
 
@@ -34,23 +33,23 @@ def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True,
     :return: 当参数use_bs4为True时返回bs4解析的soup，False时返回etree解析后的selector
     """
     global response
-    title_pattern = re.compile(r'<title>.*</title>')  # 用于寻找html中title部分的正则匹配pattern
     client = AsyncHTTPClient()
     RequestBuilder = curl_aim.value  # 将 curl_aim 转换成 RequestBuilder 类
 
-    for epoch in range(retry_time):
-        req = RequestBuilder(**kwargs).make_request(with_cookie=with_cookie)  # 获得 http request
+    for epoch in range(retry_time):  # 最多进行retry_time次的请求尝试
+        request = RequestBuilder(**kwargs).make_request(with_cookie=with_cookie)  # 获得 http request
 
         try:
-            response = yield client.fetch(req)
+            response = yield client.fetch(request)  # 发出请求获取响应
             print(response.body)
 
             # 检查是否Cookie失效
             try:
-                title = title_pattern.search(response.body.decode('gbk')).group(0)
-                if title == '<title>新浪通行证</title>':
-                    const.LOGGING.error('Cookie错误或失效! 失效Cookie为{}'.format(req.headers.get('Cookie')))
-                    return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(req.headers.get('Cookie'))}
+                title_pattern = re.compile(r'<title>.*</title>')  # 用于寻找html中title部分的正则匹配pattern
+                html_title = title_pattern.search(response.body.decode('gbk')).group(0)
+                if html_title == '<title>新浪通行证</title>':
+                    const.LOGGING.error('Cookie错误或失效! 失效Cookie为{}'.format(request.headers.get('Cookie')))
+                    return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(request.headers.get('Cookie'))}
             except (UnicodeDecodeError, AttributeError):
                 pass
 
@@ -62,7 +61,7 @@ def weibo_web_curl(curl_aim: Aim, retry_time=const.RETRY_TIME, with_cookie=True,
         if http_code == 200:
             return {'error_code': 0, 'response': response}
         elif http_code == 302 or http_code == 403:  # Cookie 失效
-            return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(req.headers.get('Cookie'))}
+            return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(request.headers.get('Cookie'))}
         elif http_code == 418:  # ip失效，偶尔产生，需要再次请求
             return {'error_code': 4, 'errmsg': 'Please change a proxy and send a request again'}
         else:
