@@ -11,7 +11,7 @@ from weibo_curl_error import WeiboCurlError
 
 
 @unique  # 确保枚举值唯一
-class Aim(Enum):
+class SpiderAim(Enum):
     """枚举全部爬取目标，每个目标的value为对应的RequestBuilder"""
     users_show = request_builder.UserIndexReqBuilder
     users_info = request_builder.UserInfoReqBuilder
@@ -28,7 +28,7 @@ class Aim(Enum):
 # AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=600)
 
 @gen.coroutine
-def weibo_web_curl(curl_aim: Aim, retry_time=settings.RETRY_TIME, with_cookie=True, **kwargs):
+def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_cookie=True, **kwargs):
     """
     根据爬取的目标对相对应的网站发送request请求并获得response
     :param curl_aim: 爬取的目标，其值必须为Aim枚举值

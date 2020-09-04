@@ -10,7 +10,7 @@ import requests
 
 import utils
 from settings import LOGGING
-from web_curl import Aim, weibo_web_curl
+from web_curl import SpiderAim, weibo_web_curl
 import settings
 from .base_parser import BaseParser
 from weibo_curl_error import HTMLParseException
@@ -340,7 +340,7 @@ class PageParser(BaseParser):
             picture_urls = list()
             if first_pic in ''.join(a_list):
                 if all_pic in ''.join(a_list):
-                    mblog_picall_curl_result = yield weibo_web_curl(Aim.mblog_pic_all, weibo_id=weibo_id)
+                    mblog_picall_curl_result = yield weibo_web_curl(SpiderAim.mblog_pic_all, weibo_id=weibo_id)
                     mblogPicAllParser = None
                     if not mblog_picall_curl_result['error_code']:
                         mblogPicAllParser = MblogPicAllParser(mblog_picall_curl_result['selector'])
@@ -481,7 +481,7 @@ class CommentParser(BaseCommentParser):
         try:
             for i in range(5):
                 if self.selector is None or i != 0:  # 当selector为空时进行爬取网页
-                    comment_curl_result = yield weibo_web_curl(Aim.weibo_comment, weibo_id=self.weibo_id)
+                    comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=self.weibo_id)
                     if not comment_curl_result['error_code']:
                         self.selector = etree.HTML(comment_curl_result['response'].body)
                     else:
