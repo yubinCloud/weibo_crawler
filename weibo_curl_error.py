@@ -26,9 +26,9 @@ class WeiboCurlError:
     }
 
     # 微博网站返回其他错误信息
-    ABNORMAL_HTTP_CODE = {
+    ABNORMAL_HTTP = {
         'error_code': 2005,
-        'error_msg': "Sina weibo return an abnormal http code."
+        'error_msg': "Sina weibo occur an abnormal http."
     }
 
     # 未知错误

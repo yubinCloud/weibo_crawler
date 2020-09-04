@@ -40,14 +40,14 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class SearchTweetsHandler(BaseHandler):
     """
-    推文搜索接口
-        说明：根据关键词搜索推文
+    微博搜索接口
+        说明：根据关键词搜索微博
         路由：/weibo_curl/api/search_tweets
     """
     @gen.coroutine
     def get(self):
         # 获取参数
-        args_dict = self.args2dict()
+        args_dict = self.args2dict()   # 查询参数 -> 参数字典
         keyword, cursor, is_hot = args_dict.get('keyword'), args_dict.get('cursor', '1'), args_dict.get('is_hot', False)
         if keyword is None:
             self.write(WeiboCurlError.REQUEST_LACK_ARGS)  # 缺少参数
@@ -71,6 +71,7 @@ class SearchTweetsHandler(BaseHandler):
         # 获取微博信息
         try:
             weibo_list = searchWeiboParser.parse_page()
+            print(weibo_list)
         except HTMLParseException:
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
@@ -214,6 +215,7 @@ class SearchUsersHandler(BaseHandler):
             return
         # 返回信息
         if user_list:
+            print(user_list)
             success = settings.SUCCESS.copy()
             success['data'] = {
                 'result': user_list,

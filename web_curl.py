@@ -38,8 +38,9 @@ def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_coo
     """
     global response
     client = AsyncHTTPClient()
-    RequestBuilder = curl_aim.value  # 将 curl_aim 转换成 RequestBuilder 类
-
+    # 将 curl_aim 转换成 RequestBuilder 类
+    RequestBuilder = curl_aim.value
+    # 构建请求并发送
     for epoch in range(retry_time):  # 最多进行retry_time次的请求尝试
         request = RequestBuilder(**kwargs).make_request(with_cookie=with_cookie)  # 获得 http request
 
@@ -56,10 +57,10 @@ def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_coo
                     return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(request.headers.get('Cookie'))}
             except (UnicodeDecodeError, AttributeError):
                 pass
-        except CurlError as e:
+        except CurlError as e:  # 连接超时
             return {'error_code': 5, 'errmsg': str(e)}
-        except HTTPError as e:
-            settings.LOGGING.warning('A HTTPError occurred:{} [{}, {}]'.format(e.__class__.__name__, e, kwargs))
+        except HTTPError as e:  # 其他HTTP错误
+            return {'error_code': 1, 'errmsg': str(e)}
 
         # 根据 http code 返回对应的信息
         http_code = response.code
@@ -80,7 +81,7 @@ def curl_result_to_api_result(curl_result):
     error_code = curl_result.get('error_code')
     # 将 error_code 转化为 WeiboCurlError 中的错误信息结果
     code_to_res = {
-        1: lambda : WeiboCurlError.ABNORMAL_HTTP_CODE.copy(),
+        1: lambda : WeiboCurlError.ABNORMAL_HTTP.copy(),
         2: lambda : WeiboCurlError.REQUEST_ARGS_ERROR.copy(),
         3: lambda : WeiboCurlError.COOKIE_INVALID.copy(),
         4: lambda : WeiboCurlError.IP_INVALID.copy(),
