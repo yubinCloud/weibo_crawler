@@ -42,8 +42,7 @@ class PageParser(BaseParser):
                         weibo_id_list.append(weibo.weibo_id)
             return weibos, weibo_id_list
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @staticmethod
@@ -68,8 +67,7 @@ class PageParser(BaseParser):
                     weibo_content = wb_content
             return dict(weibo_content=weibo_content)
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @gen.coroutine
@@ -107,8 +105,7 @@ class PageParser(BaseParser):
                 }
             return content_info
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @gen.coroutine
@@ -122,8 +119,7 @@ class PageParser(BaseParser):
                 weibo_content_info = yield self.get_retweet(info, weibo_id)
             return weibo_content_info
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @staticmethod
@@ -159,8 +155,7 @@ class PageParser(BaseParser):
                         break
             return publish_place
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @staticmethod
@@ -193,8 +188,7 @@ class PageParser(BaseParser):
                 publish_time = publish_time[:16]
             return publish_time
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @staticmethod
@@ -209,8 +203,7 @@ class PageParser(BaseParser):
                 publish_tool = u'无'
             return publish_tool
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @staticmethod
@@ -234,8 +227,7 @@ class PageParser(BaseParser):
             footer['comment_num'] = comment_num
             return footer
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @gen.coroutine
@@ -263,8 +255,7 @@ class PageParser(BaseParser):
                 picture_urls['original_pictures'] = original_picture
             return picture_urls
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @staticmethod
@@ -293,8 +284,6 @@ class PageParser(BaseParser):
                             video_url = u'无'
             return video_url
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
             return u'无'
 
     @staticmethod
@@ -338,8 +327,7 @@ class PageParser(BaseParser):
                 LOGGING.info(u'正在过滤转发微博')
             return weibo
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @gen.coroutine
@@ -379,8 +367,7 @@ class PageParser(BaseParser):
                         sys.exit()
             return picture_urls
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             return u'无'
 
 
@@ -443,8 +430,7 @@ class BaseCommentParser(BaseParser):
                 try:
                     comment = CommentParser._parse_one_comment(div)
                 except Exception as e:
-                    LOGGING.warning(e)
-                    print(e)
+                    utils.report_log(e)
                     comment = None
                 if comment is not None:
                     comment_list.append(comment)
@@ -511,8 +497,7 @@ class CommentParser(BaseCommentParser):
                         return weibo_content
                 sleep(random.randint(6, 10))
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     @gen.coroutine
@@ -531,8 +516,7 @@ class CommentParser(BaseCommentParser):
             return '转发原文：{}\n转发理由：{}'.format(retweet_content, retweet_reason)
 
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
     def get_footer(self):

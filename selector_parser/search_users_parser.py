@@ -1,6 +1,4 @@
-import sys
-
-from settings import LOGGING
+import utils
 from .base_parser import BaseParser
 from weibo_curl_error import HTMLParseException
 
@@ -38,8 +36,7 @@ class SearchUsersParser(BaseParser):
             user_list = self._get_all_user()
             return user_list
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
 

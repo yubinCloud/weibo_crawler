@@ -1,6 +1,17 @@
 from datetime import datetime, timedelta
 import sys
 from settings import LOGGING
+import traceback
+
+def report_log(exception: Exception):
+    """
+    将错误报告给日志
+    :param exception: 产生的异常
+    """
+    LOGGING.warning(
+        '{} occur a exception {}:\n{}\n==========\n{}'
+            .format(datetime.now(), exception.__class__.__name__,exception.args, traceback.format_exc())
+    )
 
 
 def handle_garbled(info):

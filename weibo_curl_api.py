@@ -10,6 +10,7 @@ import settings
 from web_curl import Aim, weibo_web_curl, curl_result_to_api_result
 from weibo_curl_error import WeiboCurlError, CookieInvalidException, HTMLParseException
 from account.account import account_pool
+from utils import report_log
 
 class BaseHandler(tornado.web.RequestHandler):
     def write(self, dict_data: dict):
@@ -133,8 +134,7 @@ class StatusesShowHandler(BaseHandler):
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
-            settings.LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            report_log(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
             return
 
@@ -156,8 +156,7 @@ class StatusesShowHandler(BaseHandler):
                 self.write(WeiboCurlError.HTML_PARSE_ERROR)
                 return
             except Exception as e:
-                settings.LOGGING.warning('{} occur a error: {}'.format(
-                    '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+                report_log((__class__.__name__, StatusesShowHandler.get.__name__), e)
                 self.write(WeiboCurlError.UNKNOWN_ERROR)
                 return
 
@@ -283,8 +282,7 @@ class UsersShowHandler(BaseHandler):
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
-            settings.LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            report_log(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
             return
 
@@ -323,9 +321,6 @@ class UserTimelineHandler(BaseHandler):
         except HTMLParseException:
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
-
-        for weibo in weibos:
-            print(weibo.__dict__)
 
         success = settings.SUCCESS.copy()
         try:
@@ -390,7 +385,7 @@ class FriendsHandler(BaseHandler):
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
-            settings.LOGGING.error(e)
+            report_log(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
 
 
@@ -436,7 +431,6 @@ class FollowersHandler(BaseHandler):
                 },
                 'cursor': cursor
             }
-            print(success)
             self.write(success)
             return
 
@@ -444,7 +438,7 @@ class FollowersHandler(BaseHandler):
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
-            settings.LOGGING.error(e)
+            report_log(e)
             self.write(WeiboCurlError.UNKNOWN_ERROR)
 
 

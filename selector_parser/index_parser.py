@@ -1,9 +1,7 @@
-import sys
-
 from settings import LOGGING
 from weibo_curl_error import CookieInvalidException, HTMLParseException
 from .base_parser import BaseParser
-
+import utils
 
 class IndexParser(BaseParser):
     def __init__(self, user_id, response):
@@ -35,8 +33,8 @@ class IndexParser(BaseParser):
             self.user['followers'] = int(user_info[2][3:-1])
             return self.user
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
+            raise HTMLParseException
 
     def get_page_num(self):
         """获取微博总页数"""
@@ -48,9 +46,8 @@ class IndexParser(BaseParser):
                                [0].attrib['value'])
             return page_num
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
-
+            utils.report_log(e)
+            raise HTMLParseException
 
 class InfoParser(BaseParser):
     def __init__(self, response):
@@ -96,8 +93,7 @@ class InfoParser(BaseParser):
                     u'\xa0', u' ')
             return user
         except Exception as e:
-            LOGGING.warning('{} occur a error: {}'.format(
-                '.'.join((__class__.__name__, sys._getframe().f_code.co_name)), e))
+            utils.report_log(e)
             raise HTMLParseException
 
 
