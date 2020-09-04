@@ -3,7 +3,6 @@ from tornado import web,gen, httpserver
 import tornado.options
 from tornado.options import define, options
 import json
-import sys
 
 from selector_parser import *
 import settings

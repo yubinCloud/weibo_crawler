@@ -55,7 +55,7 @@ class InfoParser(BaseParser):
 
     def extract_user_info(self):
         """提取用户信息"""
-        user = USER.copy()
+        user = USER_TEMPLATE.copy()
         nickname = self.selector.xpath('//title/text()')[0]
         nickname = nickname[:-3]
         # 检查cookie
@@ -98,7 +98,7 @@ class InfoParser(BaseParser):
 
 
 # 封装一个用户信息的dict
-USER = {
+USER_TEMPLATE = {
     'id': '',
     'nickname': '',
     'gender': '',
