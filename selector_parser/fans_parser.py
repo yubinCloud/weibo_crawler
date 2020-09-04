@@ -1,4 +1,3 @@
-from settings import LOGGING
 import utils
 from .base_parser import BaseParser
 

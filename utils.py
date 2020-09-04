@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import sys
 from settings import LOGGING
-from lxml import etree
+
 
 def handle_garbled(info):
     """处理乱码"""

@@ -1,6 +1,5 @@
 import settings
 from tornado.httpclient import HTTPRequest
-from tornado import  httpclient
 import enum
 from account.account import account_pool
 
@@ -171,7 +170,6 @@ class SearchUsersReqBuilder(BaseRequestBuilder):
 
 
 if __name__ == '__main__':
-    from tornado import gen
     from tornado import httpclient
 
     def f():

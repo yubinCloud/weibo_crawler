@@ -84,7 +84,7 @@ class AccountPool:
         return account.cookie, account.proxy
 
 
-with open(r'X:\Python\workbook\weibo_curl\account\account.json') as json_file:
+with open(r'account/account.json') as json_file:
     account_json = json.load(json_file)
 
 account_pool = AccountPool(account_json['cookies'], account_json['proxies'])
