@@ -257,12 +257,12 @@ class UsersShowHandler(BaseHandler):
                     infoParser = InfoParser(info_curl_result.get('response'))  # 信息页解析器
                     user_info = infoParser.extract_user_info()
                     user = idxParser.get_user(user_info)
-                    print(user.__dict__)
+                    print(user)
 
                     success = settings.SUCCESS.copy()
                     try:
                         success['data'] = {
-                            'result': user.__dict__,
+                            'result': user,
                             'cursor': ''
                         }
                     except AttributeError:  # user没有__dict__属性时，说明未爬取到user

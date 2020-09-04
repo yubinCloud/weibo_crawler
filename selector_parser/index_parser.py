@@ -29,10 +29,10 @@ class IndexParser(BaseParser):
         self.user = user_info
         try:
             user_info = self.selector.xpath("//div[@class='tip2']/*/text()")
-            self.user.weibo_id = self.user_id
-            self.user.weibo_num = int(user_info[0][3:-1])
-            self.user.following = int(user_info[1][3:-1])
-            self.user.followers = int(user_info[2][3:-1])
+            self.user['weibo_id'] = self.user_id
+            self.user['weibo_num'] = int(user_info[0][3:-1])
+            self.user['following'] = int(user_info[1][3:-1])
+            self.user['followers'] = int(user_info[2][3:-1])
             return self.user
         except Exception as e:
             LOGGING.warning('{} occur a error: {}'.format(
@@ -58,7 +58,7 @@ class InfoParser(BaseParser):
 
     def extract_user_info(self):
         """提取用户信息"""
-        user = User()
+        user = USER.copy()
         nickname = self.selector.xpath('//title/text()')[0]
         nickname = nickname[:-3]
         # 检查cookie
@@ -66,7 +66,7 @@ class InfoParser(BaseParser):
             LOGGING.warning(u'cookie错误或已过期')
             raise CookieInvalidException()
 
-        user.nickname = nickname
+        user['nickname'] = nickname
         try:
             basic_info = self.selector.xpath("//div[@class='c'][3]/text()")
             zh_list = [u'性别', u'地区', u'生日', u'简介', u'认证', u'达人']
@@ -76,22 +76,22 @@ class InfoParser(BaseParser):
             ]
             for i in basic_info:
                 if i.split(':', 1)[0] in zh_list:
-                    setattr(user, en_list[zh_list.index(i.split(':', 1)[0])],
-                            i.split(':', 1)[1].replace('\u3000', ''))
+                    user[en_list[zh_list.index(i.split(':', 1)[0])]] = i.split(':', 1)[1].replace('\u3000', '')
+
 
             if self.selector.xpath(
                     "//div[@class='tip'][2]/text()")[0] == u'学习经历':
-                user.education = self.selector.xpath(
+                user['education'] = self.selector.xpath(
                     "//div[@class='c'][4]/text()")[0][1:].replace(
                     u'\xa0', u' ')
                 if self.selector.xpath(
                         "//div[@class='tip'][3]/text()")[0] == u'工作经历':
-                    user.work = self.selector.xpath(
+                    user['work'] = self.selector.xpath(
                         "//div[@class='c'][5]/text()")[0][1:].replace(
                         u'\xa0', u' ')
             elif self.selector.xpath(
                     "//div[@class='tip'][2]/text()")[0] == u'工作经历':
-                user.work = self.selector.xpath(
+                user['work'] = self.selector.xpath(
                     "//div[@class='c'][4]/text()")[0][1:].replace(
                     u'\xa0', u' ')
             return user
@@ -101,32 +101,19 @@ class InfoParser(BaseParser):
             raise HTMLParseException
 
 
-class User():
-    def __init__(self):
-        self.id = ''
-
-        self.nickname = ''
-
-        self.gender = ''
-        self.location = ''
-        self.birthday = ''
-        self.description = ''
-        self.verified_reason = ''
-        self.talent = ''
-
-        self.education = ''
-        self.work = ''
-
-        self.weibo_num = 0
-        self.following = 0
-        self.followers = 0
-
-    def __str__(self):
-        """打印微博用户信息"""
-        result = ''
-        result += u'用户昵称: %s\n' % self.nickname
-        result += u'用户id: %s\n' % self.id
-        result += u'微博数: %d\n' % self.weibo_num
-        result += u'关注数: %d\n' % self.following
-        result += u'粉丝数: %d\n' % self.followers
-        return result
+# 封装一个用户信息的dict
+USER = {
+    'id': '',
+    'nickname': '',
+    'gender': '',
+    'location': '',
+    'birthday': '',
+    'description': '',
+    'verified_reason': '',
+    'talent': '',
+    'education': '',
+    'work': '',
+    'weibo_num': 0,
+    'following': 0,
+    'followers': 0
+}
