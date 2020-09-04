@@ -55,6 +55,11 @@ class WeiboCurlError:
         'error_msg': 'Error parsing HTML page.'
     }
 
+    CONNECT_TIMED_OUT = {
+        'error_code': 2010,
+        'error_msg': 'Connection timed out.'
+    }
+
 
 class WeiboException(Exception):
     """微博爬虫项目的异常"""

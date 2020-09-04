@@ -1,4 +1,5 @@
 from tornado import gen
+from tornado.curl_httpclient import CurlError
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from enum import Enum, unique
 import re
@@ -23,6 +24,8 @@ class Aim(Enum):
     search_weibo = request_builder.SearchWeiboReqBuilder
     search_users = request_builder.SearchUsersReqBuilder
 
+
+# AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=600)
 
 @gen.coroutine
 def weibo_web_curl(curl_aim: Aim, retry_time=settings.RETRY_TIME, with_cookie=True, **kwargs):
@@ -53,9 +56,10 @@ def weibo_web_curl(curl_aim: Aim, retry_time=settings.RETRY_TIME, with_cookie=Tr
                     return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(request.headers.get('Cookie'))}
             except (UnicodeDecodeError, AttributeError):
                 pass
-
+        except CurlError as e:
+            return {'error_code': 5, 'errmsg': str(e)}
         except HTTPError as e:
-            settings.LOGGING.warning('A HTTPError occurred:{} [{}, {}]'.format(e, curl_aim, kwargs))
+            settings.LOGGING.warning('A HTTPError occurred:{} [{}, {}]'.format(e.__class__.__name__, e, kwargs))
 
         # 根据 http code 返回对应的信息
         http_code = response.code
@@ -80,6 +84,7 @@ def curl_result_to_api_result(curl_result):
         2: lambda : WeiboCurlError.REQUEST_ARGS_ERROR.copy(),
         3: lambda : WeiboCurlError.COOKIE_INVALID.copy(),
         4: lambda : WeiboCurlError.IP_INVALID.copy(),
+        5: lambda : WeiboCurlError.CONNECT_TIMED_OUT.copy()
     }
 
     error_res = code_to_res.get(error_code)()
