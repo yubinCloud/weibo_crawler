@@ -109,8 +109,7 @@ class StatusesShowHandler(BaseHandler):
         except ValueError:
             self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
-
-
+        # 进行爬取
         comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=weibo_id, page_num=cursor)
         if not comment_curl_result['error_code']:
             self.response = comment_curl_result['response']
@@ -118,7 +117,7 @@ class StatusesShowHandler(BaseHandler):
             error_res = curl_result_to_api_result(comment_curl_result)
             self.write(error_res)
             return
-
+        # 构建解析器
         commonParser = CommentParser(weibo_id, response=self.response)
 
         try:
@@ -158,7 +157,7 @@ class StatusesShowHandler(BaseHandler):
                 report_log((__class__.__name__, StatusesShowHandler.get.__name__), e)
                 self.write(WeiboCurlError.UNKNOWN_ERROR)
                 return
-
+        # 成功时返回结果
         success = settings.SUCCESS.copy()
         success['data'] = {
             'result': {
