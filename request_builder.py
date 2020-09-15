@@ -14,6 +14,9 @@ class BaseRequestBuilder:
         return self.url
 
     def make_request(self, method='GET',with_cookie=True, **req_kwargs):
+        """
+        根据self.get_url()返回的url制作出request
+        """
         cookie, proxy = account_pool.fetch()
         proxy_host, proxy_port = proxy[0], proxy[1]
 
