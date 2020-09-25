@@ -88,21 +88,37 @@ class SearchWeiboParser(BaseParser):
                     weibo['text'] = weibo['text'][:-6]
                 weibo['at_users'] = self._get_at_users(txt_sel)
                 weibo['topics'] = self._get_topics(txt_sel)
-                reposts_count = sel.xpath('.//a[@action-type="feed_list_forward"]/text()')[0]
-                try:
-                    reposts_count = re.findall(r'\d+.*', reposts_count)
-                except TypeError:
-                    print('cookie无效或已过期，请按照'
-                          'https://github.com/dataabc/weibo-search#如何获取cookie'
-                          ' 获取cookie')
-                    raise CookieInvalidException
-                weibo['reposts_count'] = reposts_count[0] if reposts_count else '0'
-                comments_count = sel.xpath('.//a[@action-type="feed_list_comment"]/text()')[0]
-                comments_count = re.findall(r'\d+.*', comments_count)
-                weibo['comments_count'] = comments_count[
-                    0] if comments_count else '0'
-                attitudes_count = sel.xpath('(.//a[@action-type="feed_list_like"])[last()]/em/text()')[0]
-                weibo['attitudes_count'] = (attitudes_count if attitudes_count else '0')
+
+                # 获取转发数
+                reposts_count = sel.xpath('.//a[@action-type="feed_list_forward"]/text()')
+                if len(reposts_count) != 0:
+                    reposts_count = reposts_count[0]
+                    try:
+                        reposts_count = re.findall(r'\d+.*', reposts_count)
+                    except TypeError:
+                        print('cookie无效或已过期，请按照'
+                              'https://github.com/dataabc/weibo-search#如何获取cookie'
+                              ' 获取cookie')
+                        raise CookieInvalidException
+                    weibo['reposts_count'] = reposts_count[0] if reposts_count else '0'
+                else:
+                    weibo['reposts_count'] = '0'
+                # 获取评论数
+                comments_count = sel.xpath('.//a[@action-type="feed_list_comment"]/text()')
+                if len(comments_count) != 0:
+                    comments_count = comments_count[0]
+                    comments_count = re.findall(r'\d+.*', comments_count)
+                    weibo['comments_count'] = comments_count[0] if comments_count else '0'
+                else:
+                    weibo['comments_count'] = '0'
+                # 获取点赞数
+                attitudes_count = sel.xpath('(.//a[@action-type="feed_list_like"])[last()]/em/text()')
+                if len(attitudes_count) != 0:
+                    attitudes_count = attitudes_count[0]
+                    weibo['attitudes_count'] = attitudes_count if attitudes_count else '0'
+                else:
+                    weibo['attitudes_count'] = '0'
+
                 created_at = sel.xpath(
                     '(.//p[@class="from"])[last()]/a[1]/text()')[0].replace(' ', '').replace('\n', '').split('前')[0]
                 weibo['created_at'] = utils.standardize_date(created_at)
@@ -156,19 +172,31 @@ class SearchWeiboParser(BaseParser):
                         retweet['text'] = retweet['text'][:-6]
                     retweet['at_users'] = self._get_at_users(retweet_txt_sel)
                     retweet['topics'] = self._get_topics(retweet_txt_sel)
-                    reposts_count = retweet_sel[0].xpath('.//ul[@class="act s-fr"]/li/a[1]/text()')[0]
-                    reposts_count = re.findall(r'\d+.*', reposts_count)
-                    retweet['reposts_count'] = reposts_count[
-                        0] if reposts_count else '0'
-                    comments_count = retweet_sel[0].xpath('.//ul[@class="act s-fr"]/li[2]/a[1]/text()')[0]
-                    comments_count = re.findall(r'\d+.*', comments_count)
-                    retweet['comments_count'] = comments_count[
-                        0] if comments_count else '0'
-                    attitudes_count = retweet_sel[0].xpath(
-                        './/a[@action-type="feed_list_like"]/em/text()'
-                    )[0]
-                    retweet['attitudes_count'] = (attitudes_count
-                                                  if attitudes_count else '0')
+
+                    # 获取转发数
+                    reposts_count = retweet_sel[0].xpath('.//ul[@class="act s-fr"]/li/a[1]/text()')
+                    if len(reposts_count) != 0:
+                        reposts_count = reposts_count[0]
+                        reposts_count = re.findall(r'\d+.*', reposts_count)
+                        retweet['reposts_count'] = reposts_count[0] if reposts_count else '0'
+                    else:
+                        retweet['reposts_count'] = '0'
+                    # 获取评论数
+                    comments_count = retweet_sel[0].xpath('.//ul[@class="act s-fr"]/li[2]/a[1]/text()')
+                    if len(comments_count) != 0:
+                        comments_count = comments_count[0]
+                        comments_count = re.findall(r'\d+.*', comments_count)
+                        retweet['comments_count'] = comments_count[0] if comments_count else '0'
+                    else:
+                        retweet['comments_count'] = '0'
+                    # 获取点赞数
+                    attitudes_count = retweet_sel[0].xpath('.//a[@action-type="feed_list_like"]/em/text()')
+                    if len(attitudes_count) != 0:
+                        attitudes_count = attitudes_count[0]
+                        retweet['attitudes_count'] = attitudes_count if attitudes_count else '0'
+                    else:
+                        retweet['attitudes_count'] = '0'
+
                     created_at = retweet_sel[0].xpath(
                         './/p[@class="from"]/a[1]/text()')[0].replace(' ', '').replace('\n', '').split('前')[0]
                     retweet['created_at'] = utils.standardize_date(created_at)

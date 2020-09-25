@@ -25,7 +25,7 @@ class SpiderAim(Enum):
     search_users = request_builder.SearchUsersReqBuilder
 
 
-# AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=600)
+# AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
 
 @gen.coroutine
 def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_cookie=True, **kwargs):
@@ -46,7 +46,7 @@ def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_coo
 
         try:
             response = yield client.fetch(request)  # 发出请求获取响应
-            print(response.body)
+            print(response.body.decode('utf8'))
 
             # 检查是否Cookie失效
             try:
