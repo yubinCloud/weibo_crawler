@@ -46,13 +46,15 @@ def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_coo
 
         try:
             response = yield client.fetch(request)  # 发出请求获取响应
-            print(response.body.decode('utf8'))
 
             # 检查是否Cookie失效
             try:
+                charset_pattern = re.compile(r'(?<=charset=").+(?=")')
+                charset = charset_pattern.search(response.body.decode('ascii', errors='ignore')).group()  # 获取该网页的编码方案
+                print(response.body.decode(charset))
                 title_pattern = re.compile(r'<title>.*</title>')  # 用于寻找html中title部分的正则匹配pattern
-                html_title = title_pattern.search(response.body.decode('gbk')).group(0)
-                if html_title == '<title>新浪通行证</title>':
+                html_title = title_pattern.search(response.body.decode(charset)).group(0)
+                if html_title == '<title>新浪通行证</title>' or html_title == '<title>登录 - 新浪微博</title>':
                     settings.LOGGING.error('Cookie错误或失效! 失效Cookie为{}'.format(request.headers.get('Cookie')))
                     return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(request.headers.get('Cookie'))}
             except (UnicodeDecodeError, AttributeError):
