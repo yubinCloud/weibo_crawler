@@ -74,6 +74,7 @@ def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_coo
             return {'error_code': 4, 'errmsg': 'Please change a proxy and send a request again'}
         else:
             return {'error_code': 1, 'errmsg': 'Http status code: {}'.format(http_code)}
+    return {'error_code': 5, 'errmsg': ''}
 
 
 def curl_result_to_api_result(curl_result):

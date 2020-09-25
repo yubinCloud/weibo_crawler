@@ -4,7 +4,7 @@ import re
 import sys
 from time import sleep
 from lxml import etree
-
+from tornado.curl_httpclient import CurlError
 from tornado import gen
 import requests
 
@@ -62,7 +62,18 @@ class PageParser(BaseParser):
             weibo_content = weibo_content[:weibo_content.rfind(u'赞')]
             a_text = info.xpath('div//a/text()')
             if u'全文' in a_text:
-                wb_content = yield CommentParser(weibo_id).get_long_weibo()
+                # 构造 CommentParser
+                comment_resp = None
+                for i in range(settings.RETRY_TIME):
+                    comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=weibo_id)
+                    if not comment_curl_result['error_code']:
+                        comment_resp = comment_curl_result['response']
+                        break
+                    if i == settings.RETRY_TIME - 1:
+                        raise CurlError
+
+                commentParser = CommentParser(weibo_id, comment_resp)
+                wb_content = commentParser.get_long_weibo()
                 if wb_content:
                     weibo_content = wb_content
             return dict(weibo_content=weibo_content)
@@ -81,9 +92,21 @@ class PageParser(BaseParser):
             # 检查当前是否已经为全部微博内容
             a_text = info.xpath('div//a/text()')
             if u'全文' in a_text:
-                wb_content = yield CommentParser(weibo_id).get_long_retweet()
+                # 构造 CommentParser
+                comment_resp = None
+                for i in range(settings.RETRY_TIME):
+                    comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=weibo_id)
+                    if not comment_curl_result['error_code']:
+                        comment_resp = comment_curl_result['response']
+                        break
+                    if i == settings.RETRY_TIME - 1:
+                        raise CurlError
+
+                commentParser = CommentParser(weibo_id, comment_resp)
+                wb_content = commentParser.get_long_retweet()
                 if wb_content:
                     weibo_content = wb_content
+
             # 提取转发理由
             retweet_reason = utils.handle_garbled(info.xpath('div')[-1])
             retweet_reason = retweet_reason[:retweet_reason.rindex(u'赞')]
@@ -133,7 +156,8 @@ class PageParser(BaseParser):
                 article_url = url[0]
         return article_url
 
-    def get_publish_place(self, info):
+    @staticmethod
+    def get_publish_place(info):
         """获取微博发布位置"""
         try:
             div_first = info.xpath('div')[0]
@@ -230,21 +254,22 @@ class PageParser(BaseParser):
             utils.report_log(e)
             raise HTMLParseException
 
+    @staticmethod
     @gen.coroutine
-    def get_picture_urls(self, info, is_original):
+    def get_picture_urls(info, is_original, pic_filter=False):
         """获取微博原始图片url"""
         try:
             weibo_id = info.xpath('@id')[0][2:]
             picture_urls = {}
             if is_original:
-                original_pictures = yield self.extract_picture_urls(info, weibo_id)
+                original_pictures = yield PageParser.extract_picture_urls(info, weibo_id)
                 picture_urls['original_pictures'] = original_pictures
-                if not self.filter:
+                if not pic_filter:
                     picture_urls['retweet_pictures'] = list()
             else:
                 retweet_url = info.xpath("div/a[@class='cc']/@href")[0]
                 retweet_id = retweet_url.split('/')[-1].split('?')[0]
-                retweet_pictures = yield self.extract_picture_urls(info, retweet_id)
+                retweet_pictures = yield PageParser.extract_picture_urls(info, retweet_id)
                 picture_urls['retweet_pictures'] = retweet_pictures
                 a_list = info.xpath('div[last()]/a/@href')
                 original_picture = u'无'
@@ -283,7 +308,7 @@ class PageParser(BaseParser):
                         if not video_url:  # 说明该视频为直播
                             video_url = u'无'
             return video_url
-        except Exception as e:
+        except Exception:
             return u'无'
 
     @staticmethod
@@ -306,7 +331,7 @@ class PageParser(BaseParser):
                 weibo.weibo_id = info.xpath('@id')[0][2:]
                 weibo.content = yield self.get_weibo_content(info, is_original)  # 微博内容
                 weibo.article_url = self.get_article_url(info)  # 头条文章url
-                picture_urls = yield self.get_picture_urls(info, is_original)
+                picture_urls = yield self.get_picture_urls(info, is_original, self.filter)
                 weibo.original_pictures = picture_urls[
                     'original_pictures']  # 原创图片url
                 if not self.filter:
@@ -330,8 +355,9 @@ class PageParser(BaseParser):
             utils.report_log(e)
             raise HTMLParseException
 
+    @staticmethod
     @gen.coroutine
-    def extract_picture_urls(self, info, weibo_id):
+    def extract_picture_urls(info, weibo_id):
         """提取微博原始图片url"""
         try:
             a_list = info.xpath('div/a/@href')
@@ -343,7 +369,7 @@ class PageParser(BaseParser):
                     mblog_picall_curl_result = yield weibo_web_curl(SpiderAim.mblog_pic_all, weibo_id=weibo_id)
                     mblogPicAllParser = None
                     if not mblog_picall_curl_result['error_code']:
-                        mblogPicAllParser = MblogPicAllParser(mblog_picall_curl_result['selector'])
+                        mblogPicAllParser = MblogPicAllParser(mblog_picall_curl_result['response'])
                     preview_picture_list = mblogPicAllParser.extract_preview_picture_list()
                     picture_urls = [
                         p.replace('/thumb180/', '/large/')
@@ -475,17 +501,19 @@ class CommentParser(BaseCommentParser):
         super().__init__(weibo_id, response)
 
     @gen.coroutine
+    def _build_selector(self):
+        if self.selector is None:
+            comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=self.weibo_id)
+            if not comment_curl_result['error_code']:
+                self.selector = etree.HTML(comment_curl_result['response'].body)
+            else:
+                self.selector = None
+
     def get_long_weibo(self):
         """获取长原创微博"""
 
         try:
             for i in range(5):
-                if self.selector is None or i != 0:  # 当selector为空时进行爬取网页
-                    comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=self.weibo_id)
-                    if not comment_curl_result['error_code']:
-                        self.selector = etree.HTML(comment_curl_result['response'].body)
-                    else:
-                        self.selector = None
 
                 if self.selector is not None:
                     info = self.selector.xpath("//div[@id='M_']")[0]
@@ -500,11 +528,10 @@ class CommentParser(BaseCommentParser):
             utils.report_log(e)
             raise HTMLParseException
 
-    @gen.coroutine
     def get_long_retweet(self, rev_type=str):
         """获取长转发微博"""
         try:
-            wb_content = yield self.get_long_weibo()
+            wb_content = self.get_long_weibo()
             retweet_content = wb_content[:wb_content.find(u'原文转发')]  # 转发内容的原文
             retweet_reason = wb_content[wb_content.find(u'转发理由:') + 5:]  # 转发理由
 
