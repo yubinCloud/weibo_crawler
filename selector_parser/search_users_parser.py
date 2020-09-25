@@ -1,3 +1,5 @@
+import re
+
 import utils
 from .base_parser import BaseParser
 from weibo_curl_error import HTMLParseException
@@ -65,7 +67,23 @@ class SearchUsersParser(BaseParser):
             if title is not None:
                 user['title'] = title
 
-        user['user_id'] = headers[-1].get('uid')
+
+        user_id = headers[-1].get('uid')
+        if user_id is None:
+            # 尝试另外一种方法获取uid
+            user_index_url = headers[0].get('href')
+            pattern1 = re.compile(r'(?<=com/u/).+')  # 正则匹配 '//weibo.com/u/61248565' 类型，提取出其中的'61248565'
+            user_id = pattern1.search(user_index_url)
+            if user_id is not None:
+                user_id = user_id.group()
+            else:
+                # 尝试另外一种方法获取uid
+                pattern2 = re.compile(r'(?<=com/).+')  # 正则匹配 'weibo.com/xiena' 类型，提取出其中的'xiena'
+                user_id = pattern2.search(user_index_url)
+                if user_id is not None:
+                    user_id = user_id.group()
+        user['user_id'] = user_id
+
         user['nickname'] = ''.join(headers[0].xpath(".//text()"))
 
         all_p_node = info_selector.xpath('./p')
