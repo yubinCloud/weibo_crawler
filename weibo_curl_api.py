@@ -122,14 +122,9 @@ class StatusesShowHandler(BaseHandler):
         commonParser = CommentParser(weibo_id, response=self.response)
 
         try:
-            is_original = commonParser.is_original()
-            if is_original:
-                weibo_content = yield commonParser.get_long_weibo()
-            else:
-                weibo_content = yield commonParser.get_long_retweet(rev_type=dict)
-
-            user_id, user_name = commonParser.get_user()
-        except HTMLParseException:
+            weibo_detail = yield commonParser.parse_one_weibo()
+        except HTMLParseException as e:
+            report_log(e)
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         except Exception as e:
@@ -159,16 +154,11 @@ class StatusesShowHandler(BaseHandler):
                 self.write(WeiboCurlError.UNKNOWN_ERROR)
                 return
         # 成功时返回结果
+        weibo_detail['weibo_id'] = weibo_id
+        weibo_detail['comments'] = comment_list
         success = settings.SUCCESS.copy()
         success['data'] = {
-            'result': {
-                'weibo_id': weibo_id,
-                'user_id': user_id,
-                'user_name': user_name,
-                'original': is_original,
-                'weibo_content': weibo_content,
-                'comments': comment_list
-            },
+            'result': weibo_detail,
             'cursor': ''
         }
         print(success)

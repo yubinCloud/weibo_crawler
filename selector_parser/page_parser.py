@@ -255,11 +255,29 @@ class PageParser(BaseParser):
             raise HTMLParseException
 
     @staticmethod
+    def get_retweet_id(info):
+        """
+        获得转发微博的微博id
+        """
+        retweet_url = info.xpath("div/a[@class='cc']/@href")[0]
+        # 获取 retweet_id
+        retweet_id = retweet_url.split('/')[-1]
+        sep_pos = retweet_id.rfind('?')
+        if sep_pos != -1:
+            retweet_id = retweet_id[:sep_pos]
+        else:
+            sep_pos = retweet_id.rfind('#')
+            if sep_pos != -1:
+                retweet_id = retweet_id[:sep_pos]
+        return retweet_id
+
+    @staticmethod
     @gen.coroutine
-    def get_picture_urls(info, is_original, pic_filter=False):
+    def get_picture_urls(info, is_original, pic_filter=False, weibo_id=None):
         """获取微博原始图片url"""
         try:
-            weibo_id = info.xpath('@id')[0][2:]
+            if weibo_id is None:
+                weibo_id = info.xpath('@id')[0][2:]
             picture_urls = {}
             if is_original:
                 original_pictures = yield PageParser.extract_picture_urls(info, weibo_id)
@@ -267,8 +285,8 @@ class PageParser(BaseParser):
                 if not pic_filter:
                     picture_urls['retweet_pictures'] = list()
             else:
-                retweet_url = info.xpath("div/a[@class='cc']/@href")[0]
-                retweet_id = retweet_url.split('/')[-1].split('?')[0]
+                retweet_id = PageParser.get_retweet_id(info)
+
                 retweet_pictures = yield PageParser.extract_picture_urls(info, retweet_id)
                 picture_urls['retweet_pictures'] = retweet_pictures
                 a_list = info.xpath('div[last()]/a/@href')
@@ -332,8 +350,7 @@ class PageParser(BaseParser):
                 weibo.content = yield self.get_weibo_content(info, is_original)  # 微博内容
                 weibo.article_url = self.get_article_url(info)  # 头条文章url
                 picture_urls = yield self.get_picture_urls(info, is_original, self.filter)
-                weibo.original_pictures = picture_urls[
-                    'original_pictures']  # 原创图片url
+                weibo.original_pictures = picture_urls['original_pictures']  # 原创图片url
                 if not self.filter:
                     weibo.retweet_pictures = picture_urls[
                         'retweet_pictures']  # 转发图片url
@@ -371,10 +388,7 @@ class PageParser(BaseParser):
                     if not mblog_picall_curl_result['error_code']:
                         mblogPicAllParser = MblogPicAllParser(mblog_picall_curl_result['response'])
                     preview_picture_list = mblogPicAllParser.extract_preview_picture_list()
-                    picture_urls = [
-                        p.replace('/thumb180/', '/large/')
-                        for p in preview_picture_list
-                    ]
+                    picture_urls = [p.replace('/thumb180/', '/large/') for p in preview_picture_list]
                 else:
                     if info.xpath('.//img/@src'):
                         for link in info.xpath('div/a'):
@@ -499,15 +513,44 @@ class BaseCommentParser(BaseParser):
 class CommentParser(BaseCommentParser):
     def __init__(self, weibo_id, response=None):
         super().__init__(weibo_id, response)
+        if self.selector is not None:
+            self.info_node = self.selector.xpath("//div[@id='M_']")[0]
+        else:
+            self.info_node = None
+
 
     @gen.coroutine
     def _build_selector(self):
+        """构造self.selector，如果"""
         if self.selector is None:
             comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=self.weibo_id)
             if not comment_curl_result['error_code']:
                 self.selector = etree.HTML(comment_curl_result['response'].body)
+                self.info_node = self.selector.xpath("//div[@id='M_']")[0]
             else:
                 self.selector = None
+
+    @gen.coroutine
+    def parse_one_weibo(self):
+        """获取一条微博的详细信息"""
+        weibo_detail = dict()
+        is_original = self.is_original()
+        weibo_detail['original'] = is_original
+        if is_original:
+            weibo_content = self.get_long_weibo()
+        else:
+            weibo_content = self.get_long_retweet(rev_type=type(dict))
+        weibo_detail['weibo_content'] = weibo_content
+
+        weibo_detail['user_id'], weibo_detail['user_name'] = self.get_user()
+        weibo_detail['video_url'] = PageParser.get_video_url(self.info_node, is_original)
+        pic_urls = yield PageParser.get_picture_urls(self.info_node, is_original, weibo_id=self.weibo_id)
+        weibo_detail['original_pics'], weibo_detail['retweet_pics'] = pic_urls['original_pictures'], pic_urls['retweet_pictures']
+        weibo_detail['source'] = PageParser.get_publish_tool(self.info_node)
+        weibo_detail['created_at'] = PageParser.get_publish_time(self.info_node)
+        weibo_detail['topics'], weibo_detail['at_users'] = CommentParser.get_topics_and_at(self.info_node)
+        weibo_detail['user_id'], weibo_detail['user_name'] = self.get_user()
+        return weibo_detail
 
     def get_long_weibo(self):
         """获取长原创微博"""
@@ -528,17 +571,18 @@ class CommentParser(BaseCommentParser):
             utils.report_log(e)
             raise HTMLParseException
 
-    def get_long_retweet(self, rev_type=str):
+    def get_long_retweet(self, rev_type=type(str)):
         """获取长转发微博"""
         try:
             wb_content = self.get_long_weibo()
             retweet_content = wb_content[:wb_content.find(u'原文转发')]  # 转发内容的原文
             retweet_reason = wb_content[wb_content.find(u'转发理由:') + 5:]  # 转发理由
 
-            if rev_type is dict:
+            if rev_type is type(dict):
                 return {
                     'retweet': retweet_content,
-                    'retweet_reason': retweet_reason
+                    'retweet_reason': retweet_reason,
+                    'retweet_id': PageParser.get_retweet_id(self.info_node)
                 }
             return '转发原文：{}\n转发理由：{}'.format(retweet_content, retweet_reason)
 
@@ -552,15 +596,24 @@ class CommentParser(BaseCommentParser):
         # 转发量
         text = span_nodes[0].xpath(r'/a/text()')[0]
         retweet_num = text[text.find('['): text.rfind(']')]
-        retweet_num = int(retweet_num)
+        if retweet_num == '':
+            retweet_num = 0
+        else:
+            retweet_num = int(retweet_num)
         # 评论数
         text = span_nodes[1].xpath(r'/text()')[0]
         comment_num = text[text.find('['): text.find(']')]
-        comment_num = int(comment_num)
+        if comment_num == '':
+            comment_num = 0
+        else:
+            comment_num = int(comment_num)
         # 赞
         text = span_nodes[2].xpath(r'/a/text()')[0]
         up_num = text[text.find('['): text.find(']')]
-        up_num = int(up_num)
+        if up_num == '':
+            up_num = 0
+        else:
+            up_num = int(up_num)
 
         return {
             'retweet_num': retweet_num,
@@ -568,7 +621,7 @@ class CommentParser(BaseCommentParser):
             'up_num': up_num
         }
 
-    def is_original(self):
+    def is_original(self) -> bool:
         """检查是否为原创"""
         if self.selector is None:
             return True
@@ -576,7 +629,7 @@ class CommentParser(BaseCommentParser):
             res = self.selector.xpath('//*[@id="M_"]/div/span[@class="cmt"]')
             return True if len(res) == 0 else False
 
-    def get_user(self):
+    def get_user(self) -> tuple:
         """获取用户的id和用户名"""
         user_node = self.selector.xpath('//*[@id="M_"]/div[1]/a')[0]
         user_id = user_node.get('href')
@@ -586,6 +639,31 @@ class CommentParser(BaseCommentParser):
 
     def get_all_comment(self):
         return super().get_all_comment()
+
+    @staticmethod
+    def get_topics_and_at(info_node):
+        """
+        获取话题和@的用户
+        """
+        topics = list()
+        at_users = list()
+        topic_pattern = re.compile('(?<=#).*?(?=#)')
+        at_pattern = re.compile('(?<=@).*')
+        a_nodes = info_node.xpath('.//a')
+        for a_node in a_nodes:
+            text = ''.join(a_node.xpath('./text()'))
+            topic = topic_pattern.search(text)
+            if topic is not None:
+                topic = topic.group()
+                topics.append(topic)
+            else:
+                at_user = at_pattern.search(text)
+                if at_user is not None:
+                    at_user_name = at_user.group()
+                    at_user_id = a_node.get('href').split('/')[-1]
+                    at_users.append({'at_user_name': at_user_name, 'at_user_id': at_user_id})
+        return topics, at_users
+
 
 
 class HotCommentParser(BaseCommentParser):
