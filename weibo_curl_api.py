@@ -159,7 +159,7 @@ class StatusesShowHandler(BaseHandler):
         success = settings.SUCCESS.copy()
         success['data'] = {
             'result': weibo_detail,
-            'cursor': ''
+            'cursor': str(cursor + 1)
         }
         print(success)
         self.write(success)
