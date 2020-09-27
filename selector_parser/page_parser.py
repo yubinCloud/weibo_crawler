@@ -485,7 +485,7 @@ class BaseCommentParser(BaseParser):
         'content': None,  # 评论内容
         'like_num': None,  # 点赞数
         'publish_time': None,  # 发布时间
-        'public_tool': None  # 发布工具
+        'publish_tool': None  # 发布工具
     }
 
     @staticmethod
