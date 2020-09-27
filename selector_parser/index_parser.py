@@ -64,6 +64,12 @@ class InfoParser(BaseParser):
             raise CookieInvalidException()
 
         user['nickname'] = nickname
+        # 获取头像
+        try:
+            user['head'] = self.selector.xpath('//div[@class="c"]/img[@alt="头像"]')[0].get('src')
+        except:
+            user['head'] = ''
+        # 获取基本信息
         try:
             basic_info = self.selector.xpath("//div[@class='c'][3]/text()")
             zh_list = [u'性别', u'地区', u'生日', u'简介', u'认证', u'达人']
