@@ -378,11 +378,12 @@ class PageParser(BaseParser):
         """提取微博原始图片url"""
         try:
             a_list = info.xpath('div/a/@href')
-            first_pic = 'https://weibo.cn/mblog/pic/' + weibo_id
-            all_pic = 'https://weibo.cn/mblog/picAll/' + weibo_id
+            first_pic = '/mblog/pic/' + weibo_id
+            all_pic = '/mblog/picAll/' + weibo_id
             picture_urls = list()
-            if first_pic in ''.join(a_list):
-                if all_pic in ''.join(a_list):
+            all_href = ''.join(a_list)
+            if first_pic in all_href:  # 检查是否有单张的缩略图
+                if all_pic in all_href:  # 检查该条微博是否有多图
                     mblog_picall_curl_result = yield weibo_web_curl(SpiderAim.mblog_pic_all, weibo_id=weibo_id)
                     mblogPicAllParser = None
                     if not mblog_picall_curl_result['error_code']:
@@ -517,7 +518,6 @@ class CommentParser(BaseCommentParser):
             self.info_node = self.selector.xpath("//div[@id='M_']")[0]
         else:
             self.info_node = None
-
 
     @gen.coroutine
     def _build_selector(self):
@@ -663,7 +663,6 @@ class CommentParser(BaseCommentParser):
                     at_user_id = a_node.get('href').split('/')[-1]
                     at_users.append({'at_user_name': at_user_name, 'at_user_id': at_user_id})
         return topics, at_users
-
 
 
 class HotCommentParser(BaseCommentParser):
