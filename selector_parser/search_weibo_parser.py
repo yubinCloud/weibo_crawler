@@ -48,7 +48,7 @@ class SearchWeiboParser(BaseParser):
 
                 # 获取头像
                 try:
-                    weibo['head'] = sel.xpath('.//div[@class="avator"]/a//img').get('src')
+                    weibo['head'] = sel.xpath('.//div[@class="avator"]/a//img')[0].get('src')
                 except:
                     weibo['head'] = ''
 

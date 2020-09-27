@@ -61,7 +61,7 @@ class SearchUsersParser(BaseParser):
         user = SearchUsersParser.make_a_user()
         # 获取用户头像
         try:
-            user['head'] = user_node.xpath('./div[@class="avator"]/a/img').get('src')
+            user['head'] = user_node.xpath('.//div[@class="avator"]/a/img')[0].get('src')
         except:
             user['head'] = ''
         # 获取其他信息
