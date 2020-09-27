@@ -10,6 +10,7 @@ class SearchUsersParser(BaseParser):
     USER_TEMPLATE = {
         'user_id': None,  # 用户的id
         'nickname': None,  # 昵称
+        'head': None,
         'title': None,  # 所拥有的头衔
         'verified_reason': None,  # 认证原因
         'gender': None,  # 性别
@@ -58,6 +59,12 @@ class SearchUsersParser(BaseParser):
     def _parse_one_user(self, user_node):
         """解析单个用户的selector节点"""
         user = SearchUsersParser.make_a_user()
+        # 获取用户头像
+        try:
+            user['head'] = user_node.xpath('./div[@class="avator"]/a/img').get('src')
+        except:
+            user['head'] = ''
+        # 获取其他信息
         info_selector = user_node.xpath('./div[@class="info"]')[0]
         headers = info_selector.xpath('./div[1]/a')
 
