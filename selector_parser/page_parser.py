@@ -13,7 +13,7 @@ from settings import LOGGING
 from web_curl import SpiderAim, weibo_web_curl
 import settings
 from .base_parser import BaseParser
-from weibo_curl_error import HTMLParseException
+from weibo_curl_error import HTMLParseException, WeiboException
 
 
 class PageParser(BaseParser):
@@ -290,7 +290,7 @@ class PageParser(BaseParser):
                 retweet_pictures = yield PageParser.extract_picture_urls(info, retweet_id)
                 picture_urls['retweet_pictures'] = retweet_pictures
                 a_list = info.xpath('div[last()]/a/@href')
-                original_picture = u'无'
+                original_picture = ''
                 for a in a_list:
                     if a.endswith(('.gif', '.jpeg', '.jpg', '.png')):
                         original_picture = a
@@ -377,10 +377,10 @@ class PageParser(BaseParser):
     def extract_picture_urls(info, weibo_id):
         """提取微博原始图片url"""
         try:
-            a_list = info.xpath('div/a/@href')
             first_pic = '/mblog/pic/' + weibo_id
             all_pic = '/mblog/picAll/' + weibo_id
             picture_urls = list()
+            a_list = info.xpath('div/a/@href')
             all_href = ''.join(a_list)
             if first_pic in all_href:  # 检查是否有单张的缩略图
                 if all_pic in all_href:  # 检查该条微博是否有多图
@@ -388,6 +388,7 @@ class PageParser(BaseParser):
                     mblogPicAllParser = None
                     if not mblog_picall_curl_result['error_code']:
                         mblogPicAllParser = MblogPicAllParser(mblog_picall_curl_result['response'])
+
                     preview_picture_list = mblogPicAllParser.extract_preview_picture_list()
                     picture_urls = [p.replace('/thumb180/', '/large/') for p in preview_picture_list]
                 else:
@@ -483,7 +484,8 @@ class BaseCommentParser(BaseParser):
         'screen_name': None,  # 评论用户的用户名
         'content': None,  # 评论内容
         'like_num': None,  # 点赞数
-        'publish_info': None  # 发布信息（包括时间和发布工具）
+        'publish_time': None,  # 发布时间
+        'public_tool': None  # 发布工具
     }
 
     @staticmethod
@@ -502,7 +504,39 @@ class BaseCommentParser(BaseParser):
                 if pos != -1:
                     comment['like_num'] = text[pos + 2: -1]
             elif klass == 'ct':
-                comment['publish'] = ''.join(span_node.xpath('./text()'))
+                str_time = utils.handle_garbled(span_node)
+                # 获取发布工具
+                if len(str_time.split(u'来自')) > 1:
+                    publish_tool = str_time.split('来自')[1]
+                else:
+                    publish_tool = ''
+                comment['publish_tool'] = publish_tool.strip()
+                # 获取发布时间
+                publish_time = str_time.split(u'来自')[0]
+                if u'刚刚' in publish_time:
+                    publish_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+                elif u'分钟' in publish_time:
+                    minute = publish_time[:publish_time.find(u'分钟')]
+                    minute = timedelta(minutes=int(minute))
+                    publish_time = (datetime.now() -
+                                    minute).strftime('%Y-%m-%d %H:%M')
+                elif u'今天' in publish_time:
+                    today = datetime.now().strftime('%Y-%m-%d')
+                    time = publish_time[3:]
+                    publish_time = today + ' ' + time
+                    if len(publish_time) > 16:
+                        publish_time = publish_time[:16]
+                elif u'月' in publish_time:
+                    year = datetime.now().strftime('%Y')
+                    month = publish_time[0:2]
+                    day = publish_time[3:5]
+                    time = publish_time[7:12]
+                    publish_time = year + '-' + month + '-' + day + ' ' + time
+                else:
+                    publish_time = publish_time[:16]
+                comment['publish_time'] = publish_time
+
+
 
         user_node = node.xpath('./a')[0]
         comment['screen_name'] = user_node.xpath('./text()')[0]

@@ -158,10 +158,10 @@ class SearchWeiboParser(BaseParser):
                 if retweet_sel and retweet_sel[0].xpath(
                         './/div[@node-type="feed_list_forwardContent"]/a[1]'):
                     retweet = dict()
-                    retweet['id'] = retweet_sel[0].xpath(
+                    retweet['retweet_id'] = retweet_sel[0].xpath(
                         './/a[@action-type="feed_list_like"]/@action-data'
                     )[0][4:]
-                    retweet['bid'] = retweet_sel[0].xpath(
+                    retweet['weibo_id'] = retweet_sel[0].xpath(
                         './/p[@class="from"]/a/@href')[0].split(
                         '/')[-1].split('?')[0]
                     info = retweet_sel[0].xpath(
@@ -208,13 +208,12 @@ class SearchWeiboParser(BaseParser):
                         './/p[@class="from"]/a[1]/text()')[0].replace(' ', '').replace('\n', '').split('前')[0]
                     retweet['created_at'] = utils.standardize_date(created_at)
                     source = retweet_sel[0].xpath(
-                        './/p[@class="from"]/a[2]/text()')[0]
-                    retweet['source'] = source if source else ''
+                        './/p[@class="from"]/a[2]/text()')
+                    retweet['source'] = source[0] if source else ''
                     retweet['pics'] = pics
                     retweet['video_url'] = video_url
-                    retweet['retweet_id'] = ''
-                    yield retweet
-                    weibo['retweet_id'] = retweet['id']
+                    weibo['retweet_id'] = retweet['retweet_id']
+                    weibo['retweet'] = retweet
                 print(weibo)
                 yield weibo
 

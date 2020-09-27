@@ -47,6 +47,7 @@ URL参数：
 
 | key             | description                  | value type      | example                               |
 | --------------- | ---------------------------- | --------------- | ------------------------------------- |
+|head|该条微博的用户的头像url|str|"https://tvax1.sinaimg.cn/crop.0.0.700.700.50/0082iVvEly8gacm42leeaj30jg0jgmyc.jpg?KID=imgbed,tva&Expires=1601179960&ssig=fwRq%2FWyfZS"|
 | weibo_id        | 微博id                       | str             | 'Jhv4a7KAd'                           |
 | user_id         | 用户的id                     | str             | '6004281123'                          |
 | screen_name     | 用户名                       | str             | '21世纪经济报道'                      |
@@ -54,7 +55,7 @@ URL参数：
 | article_url     | 头条文章url                  | str             | ""                                    |
 | location        | 发布位置                     | str             | ""                                    |
 | at_users        | 艾特的用户，无艾特时为空列表 | [str, str, ...] | ['梨视频体育']                        |
-| topics          | 话题                         | str             | '一名新冠肺炎康复者4个多月后二次感染' |
+| topics          | 话题，多个话题之间用','分隔                         | str             | "迪丽热巴长歌行,迪丽热巴你是我的荣耀,迪丽热巴乔晶晶,星际领航员迪丽热巴" |
 | reposts_count   | 转发数                       | str             | '65'                                  |
 | comments_count  | 评论数                       | str             | '33'                                  |
 | attitudes_count | 点赞数                       | str             | '14'                                  |
@@ -62,7 +63,27 @@ URL参数：
 | source          | 发布工具                     | str             | 'iPhone客户端'                        |
 | pics            | 图片url                      | str             | ''                                    |
 | video_url       | 视频url                      | str             | ''                                    |
-| reteet_id       | 转发微博的id                 | str             | ''                                    |
+|retweet|转发的微博相关信息|dict|见下|
+
++ 上面表格中`retweet`字段的值：
+| key             | description                  | value type      | example                               |
+| --------------- | ---------------------------- | --------------- | ------------------------------------- |
+|weibo_id|转发微博的id|str|"E46COzuWT"|
+|user_id|用户的id|str|"1669879400"|
+|screen_name|用户名|str|"Dear-迪丽热巴"|
+|text|微博内容|str||
+|article_url|头条文章的url|str|"..."|
+|location|发布位置，缺失时为空字符串|str||
+|at_users|艾特的用户列表|list|["Simple281314", "DILRABA的小宝贝儿绝不服输", "Dear-迪丽热巴"]|
+|topics|话题，多个话题之间用','分隔|"迪丽热巴长歌行,迪丽热巴你是我的荣耀,迪丽热巴乔晶晶,星际领航员迪丽热巴"|
+|reposts_count|转发数量|str|"0"|
+|comments_count|评论数量|str|"0"|
+|attitudes_count|点赞数量|str|"0"|
+|created_at|创建时间|str|"2016-08-18 11:36"|
+|source|来源|str|"iPhone 6s Plus"|
+|pics|图片|list|["http://ww1.sinaimg.cn/large/63885668gw1f6xqh1wufxj21e00xc7wh.jpg", "http://ww2.sinaimg.cn/large/63885668gw1f6xqh598t3j21e00xc7wh.jpg"]
+|video_url|视频，无视频时为空字符串|str|""|
+
 
 ### 2. 推文展示接口
 
@@ -85,11 +106,14 @@ URL参数：
 
 | key           | value type                                             | description                                               | example         |
 | ------------- | ------------------------------------------------------ | --------------------------------------------------------- | --------------- |
+| original      | bool                                                   | 是否为原创                                                | false           |
 | weibo_id      | str                                                    | 微博id                                                    | "Jgs8rlEno"     |
 | user_id       | str                                                    | 发布者的id                                                | "1669879400"    |
 | user_name     | str                                                    | 发布者的昵称                                              | "Dear-迪丽热巴" |
-| original      | bool                                                   | 是否为原创                                                | false           |
-| weibo_content | 当original == true时为str；当original == false时为dict | 微博内容，类型为str时即为微博原内容；当类型为dict时见下面 |                 |
+|video_url|str|视频的url|""|
+|original_pics|原创图片的
+
+| weibo_content | 当original == true时该字段类型为str；当original == false时为dict | 微博内容，类型为str时即为微博原内容；当类型为dict时为转发微博的内容，具体字段见下面 |                 |
 |               | list                                                   | 评论列表，每个元素为一个dict，代表一条评论                |                 |
 
 当微博时转发类型时weibo_content为dict类型，其格式：
@@ -98,6 +122,7 @@ URL参数：
 | -------------- | ---------- | ----------- | ------------------- |
 | retweet        | str        | 转发内容    | "#中国首部海外...." |
 | retweet_reason | str        | 转发理由    | "......"            |
+|retweet_id|str|所转发的微博的id|"Jgoo94P6I"|
 
 comments中每个元素(dict)的格式，每个字段的值为null时表示未提取到该字段：
 
@@ -134,6 +159,7 @@ URL参数：
 | key             | description    | value type            | example                                                      |
 | --------------- | -------------- | --------------------- | ------------------------------------------------------------ |
 | user_id         | 用户的id       | str                   | '1669879400'                                                 |
+|head|用户头像|str|"..."|
 | nickname        | 昵称           | str                   | 'Dear-迪丽热巴'                                              |
 | title           | 所拥有的的头衔 | str                   | '微博个人认证'                                               |
 | verified_reason | 认证原因       | str                   | '嘉行传媒签约演员\u3000'                                     |
@@ -169,6 +195,7 @@ URL查询字符串参数:
 | key             | description | value type | example                                 |
 | --------------- | ----------- | ---------- | --------------------------------------- |
 | id              | 用户真实id  | str        | '1669879400'                            |
+|head|用户头像|str|"..."|
 | nickname        | 昵称        | str        | 'Dear-迪丽热巴'                         |
 | gender          | 性别        | str        | '女'                                    |
 | location        | 用户所在地  | str        | '上海'                                  |
