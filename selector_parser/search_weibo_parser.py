@@ -45,11 +45,13 @@ class SearchWeiboParser(BaseParser):
             if len(info) != 0:
                 weibo = dict()
                 # weibo['id'] = sel.xpath('@mid')[0]
+
                 # 获取头像
                 try:
                     weibo['head'] = sel.xpath('.//div[@class="avator"]/a//img').get('src')
                 except:
                     weibo['head'] = ''
+
                 weibo['weibo_id'] = sel.xpath('(.//p[@class="from"])[last()]/a[1]/@href')[0].split('/')[-1].split('?')[0]
                 weibo['user_id'] = info[0].xpath(
                     'div[2]/a/@href')[0].split('?')[0].split('/')[-1]
