@@ -115,17 +115,14 @@ class PageParser(BaseParser):
 
             if original_user:
                 original_user = original_user[0]
-                content_info = {
-                    'retweet_reason': retweet_reason,   # 转发理由
-                    'original_user': original_user,     # 原始用户名
-                    'weibo_content': weibo_content      # 转发内容
-                }
             else:
-                content_info = {
-                    'retweet_reason': retweet_reason,  # 转发理由
-                    'original_user': None,  # 原始用户名
-                    'weibo_content': weibo_content  # 转发内容
-                }
+                original_user = None
+
+            content_info = {
+                'retweet_reason': retweet_reason,   # 转发理由
+                'original_user': original_user,     # 原始用户名
+                'weibo_content': weibo_content      # 转发内容
+            }
             return content_info
         except Exception as e:
             utils.report_log(e)
