@@ -7,6 +7,7 @@ from lxml import etree
 from tornado.curl_httpclient import CurlError
 from tornado import gen
 import requests
+from urllib import parse
 
 import utils
 from settings import LOGGING
@@ -36,8 +37,6 @@ class PageParser(BaseParser):
                     if weibo:
                         if weibo.weibo_id in weibo_id_list:
                             continue
-                        LOGGING.info(weibo)
-                        LOGGING.info('-' * 100)
                         weibos.append(weibo)
                         weibo_id_list.append(weibo.weibo_id)
             return weibos, weibo_id_list
@@ -76,10 +75,45 @@ class PageParser(BaseParser):
                 wb_content = commentParser.get_long_weibo()
                 if wb_content:
                     weibo_content = wb_content
-            return dict(weibo_content=weibo_content)
+            # 获取topics和at_users
+            at_users, topics = PageParser.__get_atusers_and_topics(info)
+
+            return dict(weibo_content=weibo_content, topics=topics, at_users=at_users)
         except Exception as e:
             utils.report_log(e)
             raise HTMLParseException
+
+    @staticmethod
+    def __get_atusers_and_topics(node):
+        """
+        获取该node下的所有at_users和topics
+        """
+        # 获取topics和at_users
+        topics = list()
+        at_users = list()
+        topic_pattern = re.compile(r'(?<=#).+(?=#)')
+        at_user_pattern = re.compile(r'(?<=@).+')
+        for a_node in node.xpath('.//a'):
+            a_node_text = ''.join(a_node.xpath('./text()'))
+            topic = topic_pattern.search(a_node_text)
+            if topic:
+                topic = topic.group()
+                topics.append(topic)
+            at_user = at_user_pattern.search(a_node_text)
+            if at_user:
+                user_id = a_node.get('href')
+                if user_id:
+                    user_id = user_id[user_id.rfind(r'/') + 1:]
+                    try:
+                        user_id = parse.unquote(user_id)
+                    except:
+                        pass
+                at_users.append({
+                    'user_id': user_id,
+                    'user_name': at_user.group()
+                })
+        return at_users, topics
+
 
     @gen.coroutine
     def get_retweet(self, info, weibo_id):
@@ -103,25 +137,40 @@ class PageParser(BaseParser):
                         raise CurlError
 
                 commentParser = CommentParser(weibo_id, comment_resp)
-                wb_content = commentParser.get_long_retweet()
+                wb_content = commentParser.get_long_retweet(rev_type=dict)
                 if wb_content:
                     weibo_content = wb_content
 
             # 提取转发理由
-            retweet_reason = utils.handle_garbled(info.xpath('div')[-1])
-            retweet_reason = retweet_reason[:retweet_reason.rindex(u'赞')]
-            # 提取原始用户
-            original_user = info.xpath("div/span[@class='cmt']/a/text()")
-
-            if original_user:
-                original_user = original_user[0]
+            if type(weibo_content) == dict:
+                retweet_reason = weibo_content.get('retweet_reason')
+                weibo_content = weibo_content.get('retweet')
             else:
-                original_user = None
+                original_div = utils.handle_garbled(info.xpath('div')[-1])
+                retweet_reason = original_div[:original_div.rindex(u'赞')]
+
+            # 提取原始用户
+            original_user_node = info.xpath('./div/span[@class="cmt"]/a')[0]
+            original_user = ''.join(original_user_node.xpath("./text()"))
+            original_user_id = original_user_node.get('href')
+            if original_user_id is not None:
+                original_user_id = original_user_id[original_user_id.rfind(r'/') + 1:]
+            # 获取话题
+            original_div = info.xpath('./div')[0]
+            retweet_div = info.xpath('./div')[-1]
+            retweet_at_users, retweet_topics = PageParser.__get_atusers_and_topics(retweet_div)
+            original_at_users, original_topics = PageParser.__get_atusers_and_topics(original_div)
+            # 获取原始微博的
 
             content_info = {
                 'retweet_reason': retweet_reason,   # 转发理由
                 'original_user': original_user,     # 原始用户名
-                'weibo_content': weibo_content      # 转发内容
+                'original_user_id': original_user_id,  # 原始用户的用户id
+                'original_content': weibo_content,      # 转发内容
+                'retweet_topics': retweet_topics,
+                'retweet_at_users': retweet_at_users,
+                'original_topics': original_topics,
+                'original_at_users': original_at_users
             }
             return content_info
         except Exception as e:

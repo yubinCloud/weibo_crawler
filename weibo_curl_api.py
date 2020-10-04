@@ -321,6 +321,7 @@ class UserTimelineHandler(BaseHandler):
         except AttributeError:  # user没有__dict__属性时，说明未爬取到user
             self.write(WeiboCurlError.REQUEST_ARGS_ERROR)  # 报告参数错误
             return
+        print(success)
         self.write(success)
         return
 

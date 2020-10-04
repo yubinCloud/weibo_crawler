@@ -46,6 +46,7 @@ def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_coo
 
         try:
             response = yield client.fetch(request)  # 发出请求获取响应
+            print(response.body)
 
             # 检查是否Cookie失效
             try:
