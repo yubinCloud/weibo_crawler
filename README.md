@@ -271,6 +271,9 @@ content字段的含义：
 | retweet_at_users  | 转发微博的内容包含的@用户      | 同上表中`at_users`字段   |                                                              |
 | original_topics   | 原始微博包含的话题             | list                     |                                                              |
 | original_at_users | 原始微博包含的@用户            | 同上表中的`at_users`字段 |                                                              |
+|original_like_num| 原始微博的点赞数量|int|1153118|
+|original_retweet_num| 原始微博的转发量|int||
+|original_comment_num|原始微博的评论量|int||
 
 
 

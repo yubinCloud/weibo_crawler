@@ -155,12 +155,31 @@ class PageParser(BaseParser):
             original_user_id = original_user_node.get('href')
             if original_user_id is not None:
                 original_user_id = original_user_id[original_user_id.rfind(r'/') + 1:]
+            # 获取原始微博的footers
+            original_footer_div = info.xpath(r'./div')[-2]
+
+            footer_nodes = original_footer_div.xpath(r'.//span[@class="cmt"] | .//a[@class="cc"]')[-3:]
+            original_like_num = 0
+            original_retweet_num = 0
+            original_comment_num = 0
+            for i, footer_node in enumerate(footer_nodes):
+                num = ''.join(footer_node.xpath('./text()'))
+                try:
+                    num = int(num[num.find('[') + 1: num.rfind(']')])
+                except:
+                    pass
+                if i == 0:
+                    original_like_num = num
+                elif i == 1:
+                    original_retweet_num = num
+                elif i == 2:
+                    original_comment_num = num
+
             # 获取话题
             original_div = info.xpath('./div')[0]
             retweet_div = info.xpath('./div')[-1]
             retweet_at_users, retweet_topics = PageParser.__get_atusers_and_topics(retweet_div)
             original_at_users, original_topics = PageParser.__get_atusers_and_topics(original_div)
-            # 获取原始微博的
 
             content_info = {
                 'retweet_reason': retweet_reason,   # 转发理由
@@ -170,7 +189,10 @@ class PageParser(BaseParser):
                 'retweet_topics': retweet_topics,
                 'retweet_at_users': retweet_at_users,
                 'original_topics': original_topics,
-                'original_at_users': original_at_users
+                'original_at_users': original_at_users,
+                'original_like_num': original_like_num,
+                'original_retweet_num': original_retweet_num,
+                'original_comment_num': original_comment_num
             }
             return content_info
         except Exception as e:
