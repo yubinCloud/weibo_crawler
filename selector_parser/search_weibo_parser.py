@@ -214,7 +214,7 @@ class SearchWeiboParser(BaseParser):
                     retweet['video_url'] = video_url
                     weibo['retweet_id'] = retweet['retweet_id']
                     weibo['retweet'] = retweet
-                print(weibo)
+                # print(weibo)
                 yield weibo
 
     @staticmethod

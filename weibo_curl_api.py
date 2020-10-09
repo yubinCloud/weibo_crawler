@@ -71,7 +71,7 @@ class SearchTweetsHandler(BaseHandler):
         # 获取微博信息
         try:
             weibo_list = searchWeiboParser.parse_page()
-            print(weibo_list)
+            # print(weibo_list)
         except HTMLParseException:
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
@@ -161,7 +161,7 @@ class StatusesShowHandler(BaseHandler):
             'result': weibo_detail,
             'cursor': str(cursor + 1)
         }
-        print(success)
+        # print(success)
         self.write(success)
         return
 
@@ -205,7 +205,7 @@ class SearchUsersHandler(BaseHandler):
             return
         # 返回信息
         if user_list:
-            print(user_list)
+            # print(user_list)
             success = settings.SUCCESS.copy()
             success['data'] = {
                 'result': user_list,
@@ -246,7 +246,7 @@ class UsersShowHandler(BaseHandler):
                     infoParser = InfoParser(info_curl_result.get('response'))  # 信息页解析器
                     user_info = infoParser.extract_user_info()
                     user = idxParser.get_user(user_info)
-                    print(user)
+                    # print(user)
 
                     success = settings.SUCCESS.copy()
                     try:
@@ -321,7 +321,7 @@ class UserTimelineHandler(BaseHandler):
         except AttributeError:  # user没有__dict__属性时，说明未爬取到user
             self.write(WeiboCurlError.REQUEST_ARGS_ERROR)  # 报告参数错误
             return
-        print(success)
+        # print(success)
         self.write(success)
         return
 
@@ -369,7 +369,7 @@ class FriendsHandler(BaseHandler):
                 },
                 'cursor': cursor
             }
-            print(success)
+            # print(success)
             self.write(success)
             return
         except HTMLParseException:
@@ -478,5 +478,5 @@ if __name__ == '__main__':
 
     http_server = tornado.httpserver.HTTPServer(app)
     http_server.listen(options.port)
-    print('begin running...')
+    # print('begin running...')
     tornado.ioloop.IOLoop.instance().start()

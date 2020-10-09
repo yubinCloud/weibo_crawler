@@ -49,7 +49,7 @@ class SearchUsersParser(BaseParser):
         user_nodes = self.selector.xpath('//div[@id="pl_user_feedList"]/div')
         for node in user_nodes:
             user = self._parse_one_user(node)
-            print(user)
+            # print(user)
             user_list.append(user)
         return user_list
 
