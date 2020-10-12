@@ -23,7 +23,7 @@ class BaseRequestBuilder:
         else:
             headers = settings.HEADERS
 
-        print(proxy_host, proxy_port)
+        # print(proxy_host, proxy_port)
         req = HTTPRequest(url=self.get_url(), method=method,
 #                          proxy_host=proxy_host, proxy_port=proxy_port, connect_timeout=300, validate_cert=False,
                           headers=headers,
