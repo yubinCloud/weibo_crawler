@@ -16,6 +16,32 @@ import settings
 from .base_parser import BaseParser
 from weibo_curl_error import HTMLParseException, WeiboException
 
+class Weibo:
+    """一条微博的信息"""
+    def __init__(self):
+        self.weibo_id = ''
+        self.user_id = ''
+
+        self.content = ''
+        self.text = ''
+        self.article_url = ''
+        self.topics = []
+        self.at_users = []
+        self.pics = []
+        self.retweet_pictures = None
+        self.original = None
+        self.video_url = ''
+
+        self.location = ''
+        self.created_at = ''
+        self.source = ''
+
+        self.attitudes_count = 0
+        self.reposts_count = 0
+        self.comments_count = 0
+
+        self.retweet = dict()
+
 
 class PageParser(BaseParser):
     def __init__(self, user_id, response, filter):
@@ -39,7 +65,7 @@ class PageParser(BaseParser):
                             continue
                         weibos.append(weibo)
                         weibo_id_list.append(weibo.weibo_id)
-            return weibos, weibo_id_list
+            return weibos
         except Exception as e:
             utils.report_log(e)
             raise HTMLParseException
@@ -78,7 +104,7 @@ class PageParser(BaseParser):
             # 获取topics和at_users
             at_users, topics = PageParser.__get_atusers_and_topics(info)
 
-            return dict(weibo_content=weibo_content, topics=topics, at_users=at_users)
+            return weibo_content, topics, at_users
         except Exception as e:
             utils.report_log(e)
             raise HTMLParseException
@@ -116,7 +142,7 @@ class PageParser(BaseParser):
 
 
     @gen.coroutine
-    def get_retweet(self, info, weibo_id):
+    def get_retweet(self, info, weibo_id, weibo: Weibo):
         """获取转发微博"""
         try:
             weibo_content = utils.handle_garbled(info)
@@ -145,9 +171,11 @@ class PageParser(BaseParser):
             if type(weibo_content) == dict:
                 retweet_reason = weibo_content.get('retweet_reason')
                 weibo_content = weibo_content.get('retweet')
+                retweet_id = weibo_content.get('retweet_id')
             else:
                 original_div = utils.handle_garbled(info.xpath('div')[-1])
                 retweet_reason = original_div[:original_div.rindex(u'赞')]
+                retweet_id = self.get_retweet_id(info)
 
             # 提取原始用户
             original_user_node = info.xpath('./div/span[@class="cmt"]/a')[0]
@@ -181,34 +209,33 @@ class PageParser(BaseParser):
             retweet_at_users, retweet_topics = PageParser.__get_atusers_and_topics(retweet_div)
             original_at_users, original_topics = PageParser.__get_atusers_and_topics(original_div)
 
-            content_info = {
-                'retweet_reason': retweet_reason,   # 转发理由
-                'original_user': original_user,     # 原始用户名
-                'original_user_id': original_user_id,  # 原始用户的用户id
-                'original_content': weibo_content,      # 转发内容
-                'retweet_topics': retweet_topics,
-                'retweet_at_users': retweet_at_users,
-                'original_topics': original_topics,
-                'original_at_users': original_at_users,
-                'original_like_num': original_like_num,
-                'original_retweet_num': original_retweet_num,
-                'original_comment_num': original_comment_num
-            }
-            return content_info
+
+            weibo.retweet['weibo_id'] = retweet_id
+            weibo.retweet['user_id'] = original_user_id
+            weibo.retweet['screen_name'] = original_user
+            weibo.retweet['text'] = weibo_content,
+            weibo.retweet['topics'] = original_topics
+            weibo.retweet['at_users'] = original_at_users
+            weibo.retweet['attitudes_count'] = original_like_num
+            weibo.retweet['comments_count'] = original_comment_num
+            weibo.retweet['reposts_count'] = original_retweet_num
+            weibo.topics = retweet_topics
+            weibo.at_users = retweet_at_users
+            weibo.text = retweet_reason
+
         except Exception as e:
             utils.report_log(e)
             raise HTMLParseException
 
     @gen.coroutine
-    def get_weibo_content(self, info, is_original):
+    def get_weibo_content(self, info, is_original, weibo):
         """获取微博内容"""
         try:
-            weibo_id = info.xpath('@id')[0][2:]
+            weibo.weibo_id = info.xpath('@id')[0][2:]
             if is_original:
-                weibo_content_info = yield self.get_original_weibo(info, weibo_id)
+                weibo.text, weibo.topics, weibo.at_users = yield self.get_original_weibo(info, weibo.weibo_id)
             else:
-                weibo_content_info = yield self.get_retweet(info, weibo_id)
-            return weibo_content_info
+                yield self.get_retweet(info, weibo.weibo_id, weibo)
         except Exception as e:
             utils.report_log(e)
             raise HTMLParseException
@@ -242,7 +269,7 @@ class PageParser(BaseParser):
                             if len(weibo_a) >= 2:
                                 publish_place = weibo_a[-2]
                             else:
-                                publish_place = u'无'
+                                publish_place = ''
                         publish_place = utils.handle_garbled(publish_place)
                         break
             return publish_place
@@ -292,7 +319,7 @@ class PageParser(BaseParser):
             if len(str_time.split(u'来自')) > 1:
                 publish_tool = str_time.split(u'来自')[1]
             else:
-                publish_tool = u'无'
+                publish_tool = ''
             return publish_tool
         except Exception as e:
             utils.report_log(e)
@@ -373,7 +400,7 @@ class PageParser(BaseParser):
     def get_video_url(info, is_original):
         """获取微博视频url"""
         try:
-            video_url = u'无'
+            video_url = ''
             if is_original:
                 div_first = info.xpath('div')[0]
                 a_list = div_first.xpath('.//a')
@@ -392,7 +419,7 @@ class PageParser(BaseParser):
                     if not video_url:
                         video_url = wb_info['data']['object']['stream']['url']
                         if not video_url:  # 说明该视频为直播
-                            video_url = u'无'
+                            video_url = ''
             return video_url
         except Exception:
             return u'无'
@@ -413,25 +440,25 @@ class PageParser(BaseParser):
             weibo = Weibo()
             weibo.user_id = self.user_id
             is_original = self.is_original(info)
+            weibo.original = is_original  # 是否原创微博
             if (not self.filter) or is_original:
                 weibo.weibo_id = info.xpath('@id')[0][2:]
-                weibo.content = yield self.get_weibo_content(info, is_original)  # 微博内容
+                yield self.get_weibo_content(info, is_original, weibo)  # 微博内容
+
                 weibo.article_url = self.get_article_url(info)  # 头条文章url
                 picture_urls = yield self.get_picture_urls(info, is_original, self.filter)
-                weibo.original_pictures = picture_urls['original_pictures']  # 原创图片url
-                if not self.filter:
-                    weibo.retweet_pictures = picture_urls[
-                        'retweet_pictures']  # 转发图片url
-                    weibo.original = is_original  # 是否原创微博
-                weibo.video_url = self.get_video_url(info,
-                                                     is_original)  # 微博视频url
-                weibo.publish_place = self.get_publish_place(info)  # 微博发布位置
-                weibo.publish_time = self.get_publish_time(info)  # 微博发布时间
-                weibo.publish_tool = self.get_publish_tool(info)  # 微博发布工具
+                weibo.pics = picture_urls['original_pictures']  # 原创图片url
+                if not self.filter and not is_original:
+                    weibo.retweet['pics'] = picture_urls['retweet_pictures']  # 转发图片url
+
+                weibo.video_url = self.get_video_url(info, is_original)  # 微博视频url
+                weibo.location = self.get_publish_place(info)  # 微博发布位置
+                weibo.created_at = self.get_publish_time(info)  # 微博发布时间
+                weibo.source = self.get_publish_tool(info)  # 微博发布工具
                 footer = self.get_weibo_footer(info)
-                weibo.up_num = footer['up_num']  # 微博点赞数
-                weibo.retweet_num = footer['retweet_num']  # 转发数
-                weibo.comment_num = footer['comment_num']  # 评论数
+                weibo.attitudes_count = footer['up_num']  # 微博点赞数
+                weibo.reposts_count = footer['retweet_num']  # 转发数
+                weibo.comments_count = footer['comment_num']  # 评论数
             else:
                 weibo = None
                 LOGGING.info(u'正在过滤转发微博')
@@ -487,41 +514,6 @@ class MblogPicAllParser(BaseParser):
 
     def extract_preview_picture_list(self):
         return self.selector.xpath('//img/@src')
-
-
-class Weibo:
-    """一条微博的信息"""
-    def __init__(self):
-        self.weibo_id = ''
-        self.user_id = ''
-
-        self.content = ''
-        self.article_url = ''
-
-        self.original_pictures = []
-        self.retweet_pictures = None
-        self.original = None
-        self.video_url = ''
-
-        self.publish_place = ''
-        self.publish_time = ''
-        self.publish_tool = ''
-
-        self.up_num = 0
-        self.retweet_num = 0
-        self.comment_num = 0
-
-    def __str__(self):
-        """打印一条微博"""
-        result = self.content + '\n'
-        result += u'微博发布位置：%s\n' % self.publish_place
-        result += u'发布时间：%s\n' % self.publish_time
-        result += u'发布工具：%s\n' % self.publish_tool
-        result += u'点赞数：%d\n' % self.up_num
-        result += u'转发数：%d\n' % self.retweet_num
-        result += u'评论数：%d\n' % self.comment_num
-        result += u'url：https://weibo.cn/comment/%s\n' % self.weibo_id
-        return result
 
 
 class BaseCommentParser(BaseParser):

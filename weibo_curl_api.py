@@ -307,7 +307,7 @@ class UserTimelineHandler(BaseHandler):
             return
 
         try:
-            weibos, weibo_id_list = yield pageParser.get_one_page()
+            weibos = yield pageParser.get_one_page()
         except HTMLParseException:
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
