@@ -61,20 +61,29 @@ def weibo_web_curl(curl_aim: SpiderAim, retry_time=settings.RETRY_TIME, with_coo
             except (UnicodeDecodeError, AttributeError):
                 pass
         except CurlError as e:  # 连接超时
+            if epoch < settings.RETRY_TIME:
+                continue
             return {'error_code': 5, 'errmsg': str(e)}
         except HTTPError as e:  # 其他HTTP错误
+            if epoch < settings.RETRY_TIME:
+                continue
             return {'error_code': 1, 'errmsg': str(e)}
 
         # 根据 http code 返回对应的信息
         http_code = response.code
         if http_code == 200:
             return {'error_code': 0, 'response': response}
-        elif http_code == 302 or http_code == 403:  # Cookie 失效
+        # 非200时进行重试
+        if epoch < settings.RETRY_TIME:
+            continue
+        # 若重试多次仍然错误，就返回报错
+        if http_code == 302 or http_code == 403:  # Cookie 失效
             return {'error_code': 3, 'errmsg': 'Invalid cookie: {}'.format(request.headers.get('Cookie'))}
         elif http_code == 418:  # ip失效，偶尔产生，需要再次请求
             return {'error_code': 4, 'errmsg': 'Please change a proxy and send a request again'}
         else:
             return {'error_code': 1, 'errmsg': 'Http status code: {}'.format(http_code)}
+
     return {'error_code': 5, 'errmsg': ''}
 
 
