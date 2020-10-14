@@ -22,13 +22,11 @@ class Weibo:
         self.weibo_id = ''
         self.user_id = ''
 
-        self.content = ''
         self.text = ''
         self.article_url = ''
         self.topics = []
         self.at_users = []
         self.pics = []
-        self.retweet_pictures = None
         self.original = None
         self.video_url = ''
 
@@ -127,17 +125,7 @@ class PageParser(BaseParser):
                 topics.append(topic)
             at_user = at_user_pattern.search(a_node_text)
             if at_user:
-                user_id = a_node.get('href')
-                if user_id:
-                    user_id = user_id[user_id.rfind(r'/') + 1:]
-                    try:
-                        user_id = parse.unquote(user_id)
-                    except:
-                        pass
-                at_users.append({
-                    'user_id': user_id,
-                    'user_name': at_user.group()
-                })
+                at_users.append(at_user.group())
         return at_users, topics
 
 
@@ -213,7 +201,7 @@ class PageParser(BaseParser):
             weibo.retweet['weibo_id'] = retweet_id
             weibo.retweet['user_id'] = original_user_id
             weibo.retweet['screen_name'] = original_user
-            weibo.retweet['text'] = weibo_content,
+            weibo.retweet['text'] = weibo_content
             weibo.retweet['topics'] = original_topics
             weibo.retweet['at_users'] = original_at_users
             weibo.retweet['attitudes_count'] = original_like_num
@@ -257,7 +245,7 @@ class PageParser(BaseParser):
         try:
             div_first = info.xpath('div')[0]
             a_list = div_first.xpath('a')
-            publish_place = u'无'
+            publish_place = ''
             for a in a_list:
                 if ('place.weibo.com' in a.xpath('@href')[0]
                         and a.xpath('text()')[0] == u'显示地图'):
