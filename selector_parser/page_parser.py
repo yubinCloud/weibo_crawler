@@ -134,8 +134,7 @@ class PageParser(BaseParser):
         """获取转发微博"""
         try:
             weibo_content = utils.handle_garbled(info)
-            weibo_content = weibo_content[weibo_content.find(':') +
-                                          1:weibo_content.rfind(u'赞')]
+            weibo_content = weibo_content[weibo_content.find(':') + 1:weibo_content.rfind(u'赞')]
             weibo_content = weibo_content[:weibo_content.rfind(u'赞')]
             # 检查当前是否已经为全部微博内容
             a_text = info.xpath('div//a/text()')
@@ -158,8 +157,8 @@ class PageParser(BaseParser):
             # 提取转发理由
             if type(weibo_content) == dict:
                 retweet_reason = weibo_content.get('retweet_reason')
-                weibo_content = weibo_content.get('retweet')
                 retweet_id = weibo_content.get('retweet_id')
+                weibo_content = weibo_content.get('retweet')
             else:
                 original_div = utils.handle_garbled(info.xpath('div')[-1])
                 retweet_reason = original_div[:original_div.rindex(u'赞')]
@@ -653,14 +652,14 @@ class CommentParser(BaseCommentParser):
             utils.report_log(e)
             raise HTMLParseException
 
-    def get_long_retweet(self, rev_type=type(str)):
+    def get_long_retweet(self, rev_type=str):
         """获取长转发微博"""
         try:
             wb_content = self.get_long_weibo()
             retweet_content = wb_content[:wb_content.find(u'原文转发')]  # 转发内容的原文
             retweet_reason = wb_content[wb_content.find(u'转发理由:') + 5:]  # 转发理由
 
-            if rev_type is type(dict):
+            if rev_type is dict:
                 return {
                     'retweet': retweet_content,
                     'retweet_reason': retweet_reason,
