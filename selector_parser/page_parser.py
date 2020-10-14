@@ -161,7 +161,7 @@ class PageParser(BaseParser):
                 weibo_content = weibo_content.get('retweet')
             else:
                 original_div = utils.handle_garbled(info.xpath('div')[-1])
-                retweet_reason = original_div[:original_div.rindex(u'赞')]
+                retweet_reason = original_div[original_div.find(':') + 1: original_div.rindex(u'赞')]
                 retweet_id = self.get_retweet_id(info)
 
             # 提取原始用户
