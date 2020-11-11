@@ -483,6 +483,13 @@ class AccountUpdateHandler(BaseHandler):
 
 # 启动主程序
 if __name__ == '__main__':
+    import platform
+
+    if platform.system() == "Windows":
+        import asyncio
+
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     define("port", default=settings.PORT_NUM, help="run on the given port", type=int)  # 定义端口号
     ROUTE_PREFIX = r"/weibo_curl/api/"  # 路由前缀
 
