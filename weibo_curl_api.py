@@ -11,6 +11,9 @@ from weibo_curl_error import WeiboCurlError, CookieInvalidException, HTMLParseEx
 from account.account import account_pool
 from utils import report_log
 
+
+SEARCH_LIMIT_PAGES = 50  # 微博的搜索接口限制的最大页数
+
 class BaseHandler(tornado.web.RequestHandler):
     def write(self, dict_data: dict):
         """在发送之前将编码方式转化成Unicode"""
@@ -57,6 +60,14 @@ class SearchTweetsHandler(BaseHandler):
         except ValueError:
             self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
+        if cursor > SEARCH_LIMIT_PAGES:
+            results = settings.SUCCESS.copy()
+            results['data'] = {
+                'result': [],
+                'cursor': '0'
+            }
+            self.write(results)
+            return
         # 进行爬取
         search_weibo_curl_result = yield weibo_web_curl(SpiderAim.search_weibo,
                                                         keyword=keyword, page_num=cursor, is_hot=is_hot)
@@ -83,7 +94,7 @@ class SearchTweetsHandler(BaseHandler):
         success = settings.SUCCESS.copy()
         success['data'] = {
             'result': weibo_list,
-            'cursor': str(cursor + 1)
+            'cursor': str(cursor + 1) if cursor < 50 else '0'
         }
         self.write(success)
         return
@@ -109,6 +120,14 @@ class StatusesShowHandler(BaseHandler):
             cursor = 1 if not cursor else int(cursor)
         except ValueError:
             self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
+            return
+        if cursor > SEARCH_LIMIT_PAGES:
+            results = settings.SUCCESS.copy()
+            results['data'] = {
+                'result': [],
+                'cursor': '0'
+            }
+            self.write(results)
             return
         # 进行爬取
         comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=weibo_id, page_num=cursor)
@@ -159,7 +178,7 @@ class StatusesShowHandler(BaseHandler):
         success = settings.SUCCESS.copy()
         success['data'] = {
             'result': weibo_detail,
-            'cursor': str(cursor + 1)
+            'cursor': str(cursor + 1) if cursor < SEARCH_LIMIT_PAGES else '0'
         }
         # print(success)
         self.write(success)
@@ -185,6 +204,14 @@ class SearchUsersHandler(BaseHandler):
         except ValueError:
             self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
+        if cursor > SEARCH_LIMIT_PAGES:
+            result = settings.SUCCESS.copy()
+            result['data'] = {
+                'result': [],
+                'cursor': '0'
+            }
+            self.write(result)
+            return
         user_type, gender, age_limit = args_dict.get('user_type'), args_dict.get('gender'), args_dict.get('age_limit')
         # 进行爬取
         search_users_curl_result = yield weibo_web_curl(SpiderAim.search_users, keyword=keyword, user_type=user_type,
@@ -209,7 +236,7 @@ class SearchUsersHandler(BaseHandler):
             success = settings.SUCCESS.copy()
             success['data'] = {
                 'result': user_list,
-                'cursor': str(cursor + 1)
+                'cursor': str(cursor + 1) if cursor < SEARCH_LIMIT_PAGES else '0'
             }
             self.write(success)
             return
