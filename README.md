@@ -85,6 +85,8 @@ URL参数：
 |pics|图片|list|["http://ww1.sinaimg.cn/large/63885668gw1f6xqh1wufxj21e00xc7wh.jpg", "http://ww2.sinaimg.cn/large/63885668gw1f6xqh598t3j21e00xc7wh.jpg"]
 |video_url|视频，无视频时为空字符串|str|""|
 
+注：
++ 当cursor超过50时会返回空result，cursor被置'0'
 
 ### 2. 推文展示接口
 
@@ -118,6 +120,7 @@ URL参数：
 |at_users|list|艾特的用户，每个元素是一个dict，其中包含"at_user_name"和"at_user_id"，分别表示艾特用户的名字和id|[{"at_user_name": "Swisse斯维诗", "at_user_id": "Swisse%E6%96%AF%E7%BB%B4%E8%AF%97"}]
 | weibo_content | 当original == true时该字段类型为str；当original == false时为dict | 微博内容，类型为str时即为微博原内容；当类型为dict时为转发微博的内容，具体字段见下面 |                 |
 |comments        | list                                                   | 评论列表，每个元素为一个dict，代表一条评论                |                 |
+|max_page| int| 评论的最大页数|2000|
 
 当微博时转发类型时weibo_content为dict类型，其格式：
 
@@ -177,7 +180,8 @@ URL参数：
 | following       | 关注数         | str                   | '257'                                                        |
 | followers       | 粉丝数         | str                   | '7241万'                                                     |
 
-
+注：
++ 当cursor超过50时会返回空result，cursor被置'0'
 
 ### 4. 用户展示接口
 
@@ -211,7 +215,7 @@ URL查询字符串参数:
 | weibo_num       | 微博数      | int        | 1178                                    |
 | following       | 关注数      | int        | 257                                     |
 | followers       | 粉丝数      | int        | 72325060                                |
-
+|max_page         |个人微博的最大页数     | int         |200|
 ### 5. 用户时间线接口
 
 + 说明：根据用户id搜索用户的推文

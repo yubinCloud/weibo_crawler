@@ -60,14 +60,6 @@ class SearchTweetsHandler(BaseHandler):
         except ValueError:
             self.write(WeiboCurlError.REQUEST_ARGS_ERROR)
             return
-        if cursor > SEARCH_LIMIT_PAGES:
-            results = settings.SUCCESS.copy()
-            results['data'] = {
-                'result': [],
-                'cursor': '0'
-            }
-            self.write(results)
-            return
         # 进行爬取
         search_weibo_curl_result = yield weibo_web_curl(SpiderAim.search_weibo,
                                                         keyword=keyword, page_num=cursor, is_hot=is_hot)
@@ -178,7 +170,7 @@ class StatusesShowHandler(BaseHandler):
         success = settings.SUCCESS.copy()
         success['data'] = {
             'result': weibo_detail,
-            'cursor': str(cursor + 1) if cursor < SEARCH_LIMIT_PAGES else '0'
+            'cursor': str(cursor + 1) if cursor < weibo_detail['max_page'] else '0'
         }
         # print(success)
         self.write(success)
@@ -264,6 +256,7 @@ class UsersShowHandler(BaseHandler):
 
                 try:
                     user_id = idxParser.get_user_id()  # 获取到真正的user_id
+                    max_page_num = idxParser.get_page_num()  # 获取微博的页数
                 except CookieInvalidException:
                     self.write(WeiboCurlError.COOKIE_INVALID)
                     return
@@ -273,6 +266,7 @@ class UsersShowHandler(BaseHandler):
                     infoParser = InfoParser(info_curl_result.get('response'))  # 信息页解析器
                     user_info = infoParser.extract_user_info()
                     user = idxParser.get_user(user_info)
+                    user['max_page'] = max_page_num  # 微博的最大页数
                     # print(user)
 
                     success = settings.SUCCESS.copy()
@@ -334,16 +328,16 @@ class UserTimelineHandler(BaseHandler):
             return
 
         try:
-            weibos = yield pageParser.get_one_page()
+            weibos, max_page = yield pageParser.get_one_page()
         except HTMLParseException:
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
-
         success = settings.SUCCESS.copy()
         try:
+            # TODO： 是否将 max_page 也返回出去
             success['data'] = {
                 'result': [weibo.__dict__ for weibo in weibos],
-                'cursor': str(cursor + 1)
+                'cursor': str(cursor + 1) if cursor < max_page else '0'
             }
         except AttributeError:  # user没有__dict__属性时，说明未爬取到user
             self.write(WeiboCurlError.REQUEST_ARGS_ERROR)  # 报告参数错误

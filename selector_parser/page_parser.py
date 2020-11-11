@@ -50,6 +50,12 @@ class PageParser(BaseParser):
     @gen.coroutine
     def get_one_page(self):
         """获取第page页的全部微博"""
+        # 获取微博总页数
+        if not self.selector.xpath("//input[@name='mp']"):
+            max_page = 1
+        else:
+            max_page = int(self.selector.xpath("//input[@name='mp']")
+                           [0].attrib['value'])
         weibo_id_list = list()  # 存储微博的id
         weibos = list()         # 存储所有微博的信息
         try:
@@ -57,13 +63,16 @@ class PageParser(BaseParser):
             is_exist = all_weibo_info[0].xpath("div/span[@class='ctt']")
             if is_exist:
                 for i in range(0, len(all_weibo_info) - 2):
-                    weibo = yield self.get_one_weibo(all_weibo_info[i])
+                    try:
+                        weibo = yield self.get_one_weibo(all_weibo_info[i])
+                    except HTMLParseException:
+                        continue
                     if weibo:
                         if weibo.weibo_id in weibo_id_list:
                             continue
                         weibos.append(weibo)
                         weibo_id_list.append(weibo.weibo_id)
-            return weibos
+            return weibos, max_page
         except Exception as e:
             utils.report_log(e)
             raise HTMLParseException
@@ -217,15 +226,11 @@ class PageParser(BaseParser):
     @gen.coroutine
     def get_weibo_content(self, info, is_original, weibo):
         """获取微博内容"""
-        try:
-            weibo.weibo_id = info.xpath('@id')[0][2:]
-            if is_original:
-                weibo.text, weibo.topics, weibo.at_users = yield self.get_original_weibo(info, weibo.weibo_id)
-            else:
-                yield self.get_retweet(info, weibo.weibo_id, weibo)
-        except Exception as e:
-            utils.report_log(e)
-            raise HTMLParseException
+        weibo.weibo_id = info.xpath('@id')[0][2:]
+        if is_original:
+            weibo.text, weibo.topics, weibo.at_users = yield self.get_original_weibo(info, weibo.weibo_id)
+        else:
+            yield self.get_retweet(info, weibo.weibo_id, weibo)
 
     @staticmethod
     def get_article_url(info):
@@ -451,7 +456,6 @@ class PageParser(BaseParser):
                 LOGGING.info(u'正在过滤转发微博')
             return weibo
         except Exception as e:
-            utils.report_log(e)
             raise HTMLParseException
 
     @staticmethod
@@ -631,6 +635,13 @@ class CommentParser(BaseCommentParser):
         weibo_detail['created_at'] = PageParser.get_publish_time(self.info_node)
         weibo_detail['topics'], weibo_detail['at_users'] = CommentParser.get_topics_and_at(self.info_node)
         weibo_detail['user_id'], weibo_detail['user_name'] = self.get_user()
+        # 获取评论总页数
+        if not self.selector.xpath("//input[@name='mp']"):
+            max_page = 1
+        else:
+            max_page = int(self.selector.xpath("//input[@name='mp']")
+                           [0].attrib['value'])
+        weibo_detail['max_page'] = max_page
         return weibo_detail
 
     def get_long_weibo(self):
