@@ -16,8 +16,10 @@ import settings
 from .base_parser import BaseParser
 from weibo_curl_error import HTMLParseException, CookieInvalidException
 
+
 class Weibo:
     """一条微博的信息"""
+
     def __init__(self):
         self.weibo_id = ''
         self.user_id = ''
@@ -137,13 +139,13 @@ class PageParser(BaseParser):
                 at_users.append(at_user.group())
         return at_users, topics
 
-
     @gen.coroutine
     def get_retweet(self, info, weibo_id, weibo: Weibo):
         """获取转发微博"""
         try:
             weibo_content = utils.handle_garbled(info)
-            weibo_content = weibo_content[weibo_content.find(':') + 1:weibo_content.rfind(u'赞')]
+            weibo_content = weibo_content[weibo_content.find(
+                ':') + 1:weibo_content.rfind(u'赞')]
             weibo_content = weibo_content[:weibo_content.rfind(u'赞')]
             # 检查当前是否已经为全部微博内容
             a_text = info.xpath('div//a/text()')
@@ -164,13 +166,14 @@ class PageParser(BaseParser):
                     weibo_content = wb_content
 
             # 提取转发理由
-            if type(weibo_content) == dict:
+            if isinstance(weibo_content, dict):
                 retweet_reason = weibo_content.get('retweet_reason')
                 retweet_id = weibo_content.get('retweet_id')
                 weibo_content = weibo_content.get('retweet')
             else:
                 original_div = utils.handle_garbled(info.xpath('div')[-1])
-                retweet_reason = original_div[original_div.find(':') + 1: original_div.rindex(u'赞')]
+                retweet_reason = original_div[original_div.find(
+                    ':') + 1: original_div.rindex(u'赞')]
                 retweet_id = self.get_retweet_id(info)
 
             # 提取原始用户
@@ -178,11 +181,13 @@ class PageParser(BaseParser):
             original_user = ''.join(original_user_node.xpath("./text()"))
             original_user_id = original_user_node.get('href')
             if original_user_id is not None:
-                original_user_id = original_user_id[original_user_id.rfind(r'/') + 1:]
+                original_user_id = original_user_id[original_user_id.rfind(
+                    r'/') + 1:]
             # 获取原始微博的footers
             original_footer_div = info.xpath(r'./div')[-2]
 
-            footer_nodes = original_footer_div.xpath(r'.//span[@class="cmt"] | .//a[@class="cc"]')[-3:]
+            footer_nodes = original_footer_div.xpath(
+                r'.//span[@class="cmt"] | .//a[@class="cc"]')[-3:]
             original_like_num = 0
             original_retweet_num = 0
             original_comment_num = 0
@@ -190,7 +195,7 @@ class PageParser(BaseParser):
                 num = ''.join(footer_node.xpath('./text()'))
                 try:
                     num = int(num[num.find('[') + 1: num.rfind(']')])
-                except:
+                except BaseException:
                     pass
                 if i == 0:
                     original_like_num = num
@@ -202,9 +207,10 @@ class PageParser(BaseParser):
             # 获取话题
             original_div = info.xpath('./div')[0]
             retweet_div = info.xpath('./div')[-1]
-            retweet_at_users, retweet_topics = PageParser.__get_atusers_and_topics(retweet_div)
-            original_at_users, original_topics = PageParser.__get_atusers_and_topics(original_div)
-
+            retweet_at_users, retweet_topics = PageParser.__get_atusers_and_topics(
+                retweet_div)
+            original_at_users, original_topics = PageParser.__get_atusers_and_topics(
+                original_div)
 
             weibo.retweet['weibo_id'] = retweet_id
             weibo.retweet['user_id'] = original_user_id
@@ -405,7 +411,8 @@ class PageParser(BaseParser):
                 if video_link != u'无':
                     video_link = video_link.replace(
                         'm.weibo.cn/s/video/show', 'm.weibo.cn/s/video/object')
-                    wb_info = requests.get(video_link, headers=settings.HEADERS).json()
+                    wb_info = requests.get(
+                        video_link, headers=settings.HEADERS).json()
                     video_url = wb_info['data']['object']['stream'].get(
                         'hd_url')
                     if not video_url:
@@ -441,9 +448,11 @@ class PageParser(BaseParser):
                 picture_urls = yield self.get_picture_urls(info, is_original, self.filter)
                 weibo.pics = picture_urls['original_pictures']  # 原创图片url
                 if not self.filter and not is_original:
-                    weibo.retweet['pics'] = picture_urls['retweet_pictures']  # 转发图片url
+                    # 转发图片url
+                    weibo.retweet['pics'] = picture_urls['retweet_pictures']
 
-                weibo.video_url = self.get_video_url(info, is_original)  # 微博视频url
+                weibo.video_url = self.get_video_url(
+                    info, is_original)  # 微博视频url
                 weibo.location = self.get_publish_place(info)  # 微博发布位置
                 weibo.created_at = self.get_publish_time(info)  # 微博发布时间
                 weibo.source = self.get_publish_tool(info)  # 微博发布工具
@@ -473,10 +482,14 @@ class PageParser(BaseParser):
                     mblog_picall_curl_result = yield weibo_web_curl(SpiderAim.mblog_pic_all, weibo_id=weibo_id)
                     mblogPicAllParser = None
                     if not mblog_picall_curl_result['error_code']:
-                        mblogPicAllParser = MblogPicAllParser(mblog_picall_curl_result['response'])
+                        mblogPicAllParser = MblogPicAllParser(
+                            mblog_picall_curl_result['response'])
 
                     preview_picture_list = mblogPicAllParser.extract_preview_picture_list()
-                    picture_urls = [p.replace('/thumb180/', '/large/') for p in preview_picture_list]
+                    picture_urls = [
+                        p.replace(
+                            '/thumb180/',
+                            '/large/') for p in preview_picture_list]
                 else:
                     if info.xpath('.//img/@src'):
                         for link in info.xpath('div/a'):
@@ -485,7 +498,9 @@ class PageParser(BaseParser):
                                     if len(link.xpath('img/@src')) > 0:
                                         preview_picture = link.xpath(
                                             'img/@src')[0]
-                                        picture_urls = [preview_picture.replace('/wap180/', '/large/')]
+                                        picture_urls = [
+                                            preview_picture.replace(
+                                                '/wap180/', '/large/')]
                                         break
                     else:
                         LOGGING.warning(
@@ -509,6 +524,7 @@ class MblogPicAllParser(BaseParser):
 
 class BaseCommentParser(BaseParser):
     """由于普通评论页面和热评页面的评论区构造相同，因此单独设置一个基类用来提取这部分评论区的信息"""
+
     def __init__(self, weibo_id, response=None):
         super().__init__(response)
         self.weibo_id = weibo_id
@@ -587,8 +603,6 @@ class BaseCommentParser(BaseParser):
                     publish_time = publish_time[:16]
                 comment['publish_time'] = publish_time
 
-
-
         user_node = node.xpath('./a')[0]
         comment['screen_name'] = user_node.xpath('./text()')[0]
         user_href = user_node.get('href')
@@ -613,7 +627,8 @@ class CommentParser(BaseCommentParser):
         if self.selector is None:
             comment_curl_result = yield weibo_web_curl(SpiderAim.weibo_comment, weibo_id=self.weibo_id)
             if not comment_curl_result['error_code']:
-                self.selector = etree.HTML(comment_curl_result['response'].body)
+                self.selector = etree.HTML(
+                    comment_curl_result['response'].body)
                 self.info_node = self.selector.xpath("//div[@id='M_']")[0]
             else:
                 self.selector = None
@@ -631,12 +646,15 @@ class CommentParser(BaseCommentParser):
         weibo_detail['weibo_content'] = weibo_content
 
         weibo_detail['user_id'], weibo_detail['user_name'] = self.get_user()
-        weibo_detail['video_url'] = PageParser.get_video_url(self.info_node, is_original)
+        weibo_detail['video_url'] = PageParser.get_video_url(
+            self.info_node, is_original)
         pic_urls = yield PageParser.get_picture_urls(self.info_node, is_original, weibo_id=self.weibo_id)
         weibo_detail['original_pics'], weibo_detail['retweet_pics'] = pic_urls['original_pictures'], pic_urls['retweet_pictures']
         weibo_detail['source'] = PageParser.get_publish_tool(self.info_node)
-        weibo_detail['created_at'] = PageParser.get_publish_time(self.info_node)
-        weibo_detail['topics'], weibo_detail['at_users'] = CommentParser.get_topics_and_at(self.info_node)
+        weibo_detail['created_at'] = PageParser.get_publish_time(
+            self.info_node)
+        weibo_detail['topics'], weibo_detail['at_users'] = CommentParser.get_topics_and_at(
+            self.info_node)
         weibo_detail['user_id'], weibo_detail['user_name'] = self.get_user()
         # 获取评论总页数
         if not self.selector.xpath("//input[@name='mp']"):
@@ -756,7 +774,8 @@ class CommentParser(BaseCommentParser):
                 if at_user is not None:
                     at_user_name = at_user.group()
                     at_user_id = a_node.get('href').split('/')[-1]
-                    at_users.append({'at_user_name': at_user_name, 'at_user_id': at_user_id})
+                    at_users.append(
+                        {'at_user_name': at_user_name, 'at_user_id': at_user_id})
         return topics, at_users
 
 
@@ -764,6 +783,7 @@ class HotCommentParser(BaseCommentParser):
     """
     解析热评页
     """
+
     def __init__(self, weibo_id, response):
         super().__init__(weibo_id, response)
 

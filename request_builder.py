@@ -4,16 +4,16 @@ import enum
 from account.account import account_pool
 
 
-
 class BaseRequestBuilder:
     """用以根据参数构造出request的相关信息"""
+
     def __init__(self):
         self.url = str()
 
     def get_url(self):
         return self.url
 
-    def make_request(self, method='GET',with_cookie=True, **req_kwargs):
+    def make_request(self, method='GET', with_cookie=True, **req_kwargs):
         cookie, proxy = account_pool.fetch()
         proxy_host, proxy_port = proxy[0], proxy[1]
 
@@ -25,7 +25,8 @@ class BaseRequestBuilder:
 
         # print(proxy_host, proxy_port)
         req = HTTPRequest(url=self.get_url(), method=method,
-#                          proxy_host=proxy_host, proxy_port=proxy_port, connect_timeout=300, validate_cert=False,
+                          # proxy_host=proxy_host, proxy_port=proxy_port,
+                          # connect_timeout=300, validate_cert=False,
                           headers=headers,
                           request_timeout=settings.REQUEST_TIME_OUT, **req_kwargs)
         return req
@@ -33,6 +34,7 @@ class BaseRequestBuilder:
 
 class UserIndexReqBuilder(BaseRequestBuilder):
     """根据用户id构造出用户的主页URL"""
+
     def __init__(self, user_id='1669879400'):
         super().__init__()
         self.url = 'https://weibo.cn/{}'.format(user_id)
@@ -40,6 +42,7 @@ class UserIndexReqBuilder(BaseRequestBuilder):
 
 class UserInfoReqBuilder(BaseRequestBuilder):
     """根据用户id构造出用户的信息页URL"""
+
     def __init__(self, user_id):
         super().__init__()
         self.url = 'https://weibo.cn/{}/info'.format(user_id)
@@ -47,6 +50,7 @@ class UserInfoReqBuilder(BaseRequestBuilder):
 
 class UserWeiboPageReqBuilder(BaseRequestBuilder):
     """根据用户id构造用户的某一页微博的URL"""
+
     def __init__(self, user_id, page_num=1):
         super().__init__()
         self.url = 'https://weibo.cn/{}?page={}'.format(user_id, page_num)
@@ -54,20 +58,25 @@ class UserWeiboPageReqBuilder(BaseRequestBuilder):
 
 class WeiboCommentReqBuilder(BaseRequestBuilder):
     """根据weibo_id获取该微博的评论URL"""
+
     def __init__(self, weibo_id, page_num=1):
         super().__init__()
-        self.url = 'https://weibo.cn/comment/{}?page={}'.format(weibo_id, page_num)
+        self.url = 'https://weibo.cn/comment/{}?page={}'.format(
+            weibo_id, page_num)
 
 
 class HotCommentReqBuilder(BaseRequestBuilder):
     """根据weibo_id获取该微博的热门评论的URL"""
+
     def __init__(self, weibo_id, page_num=1):
         super().__init__()
-        self.url = 'https://weibo.cn/comment/hot/{}?page={}'.format(weibo_id, page_num)
+        self.url = 'https://weibo.cn/comment/hot/{}?page={}'.format(
+            weibo_id, page_num)
 
 
 class MblogPicAllReqBuilder(BaseRequestBuilder):
     """微博所有图片的URL"""
+
     def __init__(self, weibo_id):
         super().__init__()
         self.url = 'https://weibo.cn/mblog/picAll/' + weibo_id + '?rl=1'
@@ -75,13 +84,16 @@ class MblogPicAllReqBuilder(BaseRequestBuilder):
 
 class FollowsReqBuilder(BaseRequestBuilder):
     """一个用户关注的人的URL"""
+
     def __init__(self, user_id, page_num):
         super().__init__()
-        self.url = 'https://weibo.cn/{}/follow?page={}'.format(user_id, page_num)
+        self.url = 'https://weibo.cn/{}/follow?page={}'.format(
+            user_id, page_num)
 
 
 class FansReqBuilder(BaseRequestBuilder):
     """一个用户的粉丝页的URL"""
+
     def __init__(self, user_id, page_num):
         super().__init__()
         self.url = 'https://weibo.cn/{}/fans?page={}'.format(user_id, page_num)
@@ -89,11 +101,13 @@ class FansReqBuilder(BaseRequestBuilder):
 
 class SearchWeiboReqBuilder(BaseRequestBuilder):
     """用于搜索微博的页面URL"""
+
     def __init__(self, keyword, page_num, is_hot):
         super().__init__()
         search_type = r"xsort=hot&suball=1&Refer=g" if is_hot else r"typeall=1&suball=1"
-        self.url = 'https://s.weibo.com/weibo?{}&page={}&q={}'.format(search_type, page_num, keyword)
-        
+        self.url = 'https://s.weibo.com/weibo?{}&page={}&q={}'.format(
+            search_type, page_num, keyword)
+
 
 class UserType(enum.Enum):
     """搜索用户时的用户类型限制"""
@@ -166,7 +180,8 @@ class SearchUsersReqBuilder(BaseRequestBuilder):
         # 再将这些枚举类型转化成url的查询字符串
         query_str = ''.join((user_type.value, gender.value, age_limit.value))
 
-        self.url = 'https://s.weibo.com/user?q={}&Refer=weibo_user{}&page={}'.format(keyword, query_str, page_num)
+        self.url = 'https://s.weibo.com/user?q={}&Refer=weibo_user{}&page={}'.format(
+            keyword, query_str, page_num)
 
 
 if __name__ == '__main__':
@@ -182,8 +197,3 @@ if __name__ == '__main__':
             print(e)
 
     f()
-
-
-
-
-

@@ -1,5 +1,5 @@
 import tornado.ioloop
-from tornado import web,gen, httpserver
+from tornado import web, gen, httpserver
 import tornado.options
 from tornado.options import define, options
 import json
@@ -13,6 +13,7 @@ from utils import report_log
 
 
 SEARCH_LIMIT_PAGES = 50  # 微博的搜索接口限制的最大页数
+
 
 class BaseHandler(tornado.web.RequestHandler):
     def write(self, dict_data: dict):
@@ -40,7 +41,6 @@ class BaseHandler(tornado.web.RequestHandler):
         return json_obj
 
 
-
 class SearchTweetsHandler(BaseHandler):
     """
     微博搜索接口
@@ -51,7 +51,8 @@ class SearchTweetsHandler(BaseHandler):
     def get(self):
         # 获取参数
         args_dict = self.args2dict()   # 查询参数 -> 参数字典
-        keyword, cursor, is_hot = args_dict.get('keyword'), args_dict.get('cursor', '1'), args_dict.get('is_hot', False)
+        keyword, cursor, is_hot = args_dict.get('keyword'), args_dict.get(
+            'cursor', '1'), args_dict.get('is_hot', False)
         if keyword is None:
             self.write(WeiboCurlError.REQUEST_LACK_ARGS)  # 缺少参数
             return
@@ -160,12 +161,14 @@ class StatusesShowHandler(BaseHandler):
                 return
 
             try:
-                comment_list = HotCommentParser(weibo_id, self.hot_comment_response).get_all_comment()
+                comment_list = HotCommentParser(
+                    weibo_id, self.hot_comment_response).get_all_comment()
             except HTMLParseException:
                 self.write(WeiboCurlError.HTML_PARSE_ERROR)
                 return
             except Exception as e:
-                report_log((__class__.__name__, StatusesShowHandler.get.__name__), e)
+                report_log(
+                    (__class__.__name__, StatusesShowHandler.get.__name__), e)
                 self.write(WeiboCurlError.UNKNOWN_ERROR)
                 return
         # 成功时返回结果
@@ -191,7 +194,8 @@ class SearchUsersHandler(BaseHandler):
     def get(self):
         # 获取参数
         args_dict = self.args2dict()
-        keyword, cursor = args_dict.get('keyword'), args_dict.get('cursor', '1')
+        keyword, cursor = args_dict.get(
+            'keyword'), args_dict.get('cursor', '1')
         if keyword is None:
             self.write(WeiboCurlError.REQUEST_LACK_ARGS)  # 缺少参数
             return
@@ -208,7 +212,8 @@ class SearchUsersHandler(BaseHandler):
             }
             self.write(result)
             return
-        user_type, gender, age_limit = args_dict.get('user_type'), args_dict.get('gender'), args_dict.get('age_limit')
+        user_type, gender, age_limit = args_dict.get(
+            'user_type'), args_dict.get('gender'), args_dict.get('age_limit')
         # 进行爬取
         search_users_curl_result = yield weibo_web_curl(SpiderAim.search_users, keyword=keyword, user_type=user_type,
                                                         gender=gender, age_limit=age_limit, page_num=cursor)
@@ -254,9 +259,11 @@ class UsersShowHandler(BaseHandler):
             return
 
         try:
-            idx_curl_result = yield weibo_web_curl(SpiderAim.users_show, user_id=user_id)  # 爬取主页的结果
+            # 爬取主页的结果
+            idx_curl_result = yield weibo_web_curl(SpiderAim.users_show, user_id=user_id)
             if not idx_curl_result['error_code']:
-                idxParser = IndexParser(user_id, idx_curl_result.get('response'))  # 构建一个主页解析器
+                idxParser = IndexParser(
+                    user_id, idx_curl_result.get('response'))  # 构建一个主页解析器
 
                 try:
                     user_id = idxParser.get_user_id()  # 获取到真正的user_id
@@ -265,9 +272,11 @@ class UsersShowHandler(BaseHandler):
                     self.write(WeiboCurlError.COOKIE_INVALID)
                     return
 
-                info_curl_result = yield weibo_web_curl(SpiderAim.users_info, user_id=user_id)  # 爬取信息页的结果
+                # 爬取信息页的结果
+                info_curl_result = yield weibo_web_curl(SpiderAim.users_info, user_id=user_id)
                 if not info_curl_result['error_code']:
-                    infoParser = InfoParser(info_curl_result.get('response'))  # 信息页解析器
+                    infoParser = InfoParser(
+                        info_curl_result.get('response'))  # 信息页解析器
                     user_info = infoParser.extract_user_info()
                     user = idxParser.get_user(user_info)
                     user['max_page'] = max_page_num  # 微博的最大页数
@@ -325,7 +334,8 @@ class UserTimelineHandler(BaseHandler):
 
         page_curl_result = yield weibo_web_curl(SpiderAim.users_weibo_page, user_id=user_id, page_num=cursor)
         if not page_curl_result['error_code']:
-            pageParser = PageParser(user_id, page_curl_result['response'], filter)
+            pageParser = PageParser(
+                user_id, page_curl_result['response'], filter)
         else:
             error_res = curl_result_to_api_result(page_curl_result)
             self.write(error_res)
@@ -360,7 +370,8 @@ class FriendsHandler(BaseHandler):
     def get(self):
         # 获取查询参数
         args_dict = self.args2dict()
-        user_id, cursor = args_dict.get('user_id'), args_dict.get('cursor', '1')
+        user_id, cursor = args_dict.get(
+            'user_id'), args_dict.get('cursor', '1')
         if user_id is None:
             self.write(WeiboCurlError.REQUEST_LACK_ARGS)
             return
@@ -413,7 +424,8 @@ class FollowersHandler(BaseHandler):
     @gen.coroutine
     def get(self):
         args_dict = self.args2dict()
-        user_id, cursor = args_dict.get('user_id'), args_dict.get('cursor', '1')
+        user_id, cursor = args_dict.get(
+            'user_id'), args_dict.get('cursor', '1')
         if user_id is None:
             self.write(WeiboCurlError.REQUEST_LACK_ARGS)
             return
@@ -463,6 +475,7 @@ class AccountUpdateHandler(BaseHandler):
         说明：接收一个包含有cookie和proxy的json文件并更新程序运行时向微博发送请求所携带的cookie与proxy
         路由：/weibo_curl/api/account
     """
+
     def post(self):
         json_obj = self.get_json()
         cookies, proxies = json_obj.get('cookies'), json_obj.get('proxies')
@@ -493,7 +506,11 @@ if __name__ == '__main__':
 
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    define("port", default=settings.PORT_NUM, help="run on the given port", type=int)  # 定义端口号
+    define(
+        "port",
+        default=settings.PORT_NUM,
+        help="run on the given port",
+        type=int)  # 定义端口号
     ROUTE_PREFIX = r"/weibo_curl/api/"  # 路由前缀
 
     app = tornado.web.Application([

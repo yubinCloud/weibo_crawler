@@ -3,6 +3,7 @@ import sys
 from settings import LOGGING
 import traceback
 
+
 def report_log(exception: Exception):
     """
     将错误报告给日志
@@ -10,7 +11,7 @@ def report_log(exception: Exception):
     """
     LOGGING.warning(
         '{} occur a exception {}:\n{}\n==========\n{}'
-            .format(datetime.now(), exception.__class__.__name__,exception.args, traceback.format_exc())
+        .format(datetime.now(), exception.__class__.__name__, exception.args, traceback.format_exc())
     )
 
 
@@ -30,7 +31,7 @@ def extract_from_one_table_node(table_node):
     follow_user = table_node.xpath('./a')[0]
     user_name = follow_user.text  # 关注者的昵称
     user_id = follow_user.get('href')  # 关注者的id
-    if type(user_id) is str:
+    if isinstance(user_id, str):
         user_id = user_id[user_id.rfind(r'/') + 1:]
     fans_num = table_node.xpath('text()')  # 关注者的粉丝数
     if len(fans_num) != 0:
@@ -59,7 +60,7 @@ def standardize_date(created_at):
         created_at = (datetime.now() - hour).strftime("%Y-%m-%d %H:%M")
     elif "今天" in created_at:
         today = datetime.now().strftime('%Y-%m-%d')
-        created_at = today+' '+created_at[2:]
+        created_at = today + ' ' + created_at[2:]
     elif '年' not in created_at:
         year = datetime.now().strftime("%Y")
         month = created_at[:2]
