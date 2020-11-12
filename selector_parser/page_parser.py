@@ -7,14 +7,14 @@ from lxml import etree
 from tornado.curl_httpclient import CurlError
 from tornado import gen
 import requests
-from urllib import parse
+
 
 import utils
 from settings import LOGGING
 from web_curl import SpiderAim, weibo_web_curl
 import settings
 from .base_parser import BaseParser
-from weibo_curl_error import HTMLParseException, WeiboException
+from weibo_curl_error import HTMLParseException, CookieInvalidException
 
 class Weibo:
     """一条微博的信息"""
@@ -600,7 +600,10 @@ class CommentParser(BaseCommentParser):
     def __init__(self, weibo_id, response=None):
         super().__init__(weibo_id, response)
         if self.selector is not None:
-            self.info_node = self.selector.xpath("//div[@id='M_']")[0]
+            try:
+                self.info_node = self.selector.xpath("//div[@id='M_']")[0]
+            except IndexError:
+                raise CookieInvalidException
         else:
             self.info_node = None
 

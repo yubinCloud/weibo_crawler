@@ -130,7 +130,11 @@ class StatusesShowHandler(BaseHandler):
             self.write(error_res)
             return
         # 构建解析器
-        commonParser = CommentParser(weibo_id, response=self.response)
+        try:
+            commonParser = CommentParser(weibo_id, response=self.response)
+        except CookieInvalidException:
+            self.write(WeiboCurlError.COOKIE_INVALID)
+            return
 
         try:
             weibo_detail = yield commonParser.parse_one_weibo()
@@ -334,7 +338,6 @@ class UserTimelineHandler(BaseHandler):
             return
         success = settings.SUCCESS.copy()
         try:
-            # TODO： 是否将 max_page 也返回出去
             success['data'] = {
                 'result': [weibo.__dict__ for weibo in weibos],
                 'cursor': str(cursor + 1) if cursor < max_page else '0'

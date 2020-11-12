@@ -93,7 +93,6 @@ class SearchWeiboReqBuilder(BaseRequestBuilder):
         super().__init__()
         search_type = r"xsort=hot&suball=1&Refer=g" if is_hot else r"typeall=1&suball=1"
         self.url = 'https://s.weibo.com/weibo?{}&page={}&q={}'.format(search_type, page_num, keyword)
-        print(self.url)
         
 
 class UserType(enum.Enum):
