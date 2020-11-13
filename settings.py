@@ -1,6 +1,6 @@
 import logging
 
-PORT_NUM = 8000  # app运行的端口号
+PORT_NUM = 8080  # app运行的端口号
 
 
 # 发送一个request最多重新尝试的次数

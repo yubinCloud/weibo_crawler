@@ -343,13 +343,20 @@ class UserTimelineHandler(BaseHandler):
 
         try:
             weibos, max_page = yield pageParser.get_one_page()
+            if cursor == 1:
+                user = pageParser.get_user_info_when_first_page()
+            else:
+                user = pageParser.get_user_info_except_first_page()
         except HTMLParseException:
             self.write(WeiboCurlError.HTML_PARSE_ERROR)
             return
         success = settings.SUCCESS.copy()
         try:
             success['data'] = {
-                'result': [weibo.__dict__ for weibo in weibos],
+                'result': {
+                    'user': user,
+                    'weibos': [weibo.__dict__ for weibo in weibos]
+                },
                 'cursor': str(cursor + 1) if cursor < max_page else '0'
             }
         except AttributeError:  # user没有__dict__属性时，说明未爬取到user

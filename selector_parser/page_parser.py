@@ -49,6 +49,41 @@ class PageParser(BaseParser):
         self.user_id = user_id
         self.filter = filter  # 值为1代表爬取全部原创微博，0代表爬取全部微博（原创+转发）
 
+    def get_user_info_except_first_page(self):
+        """获取除第一页外每页中顶部用户的一些信息，包括用户名、微博数、关注数、粉丝数"""
+        user = dict()
+        user_node = self.selector.xpath('.//div[@class="u"]')[0]
+        screen_name = ''.join(user_node.xpath('./div[@class="ut"]/text()'))
+        user['screen_name'] = screen_name.strip()[:-3]
+        tip_node = user_node.xpath('./div[@class="tip2"]')[0]
+        self.__extract_tips_from_tip_node(tip_node, user)
+        return user
+
+    def get_user_info_when_first_page(self):
+        """获取除第一页外每页中顶部用户的一些信息，包括用户名、微博数、关注数、粉丝数"""
+        user = dict()
+        user_node = self.selector.xpath('//div[@class="u"]')[0]
+        user['screen_name'] = user_node.xpath('.//span[@class="ctt"][1]/text()')[0]
+        tip_node = user_node.xpath('.//div[@class="tip2"]')[0]
+        self.__extract_tips_from_tip_node(tip_node, user)
+        return user
+
+    @staticmethod
+    def __extract_tips_from_tip_node(tip_node, user):
+        """
+        从页面上部 <div class="tip2"> 的节点中提取信息
+        :param tip_node: <div class="tip2"> 所代表的节点
+        :return: 将提取的信息存入user字典中
+        """
+        pattern = re.compile(r'\d+')
+
+        for sub_node in tip_node.xpath("./*"):
+            nodetext = sub_node.xpath('./text()')[0]
+            k = nodetext[:2]
+            v = pattern.search(nodetext).group()
+            user[k] = int(v)
+
+
     @gen.coroutine
     def get_one_page(self):
         """获取第page页的全部微博"""
