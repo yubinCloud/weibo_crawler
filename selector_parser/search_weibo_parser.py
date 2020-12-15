@@ -82,17 +82,22 @@ class SearchWeiboParser(BaseParser):
                     else:
                         txt_sel = content_full[0]
                         is_long_weibo = True
-                weibo['text'] = txt_sel.xpath(
-                    'string(.)').replace('\u200b', '').replace(
-                    '\ue627', '')
+                text = txt_sel.xpath('.//text()')
+                if text is not None:
+                    weibo['text'] = ' '.join(text)
+                else:
+                    weibo['text'] = ''
+                # weibo['text'] = txt_sel.xpath('string(.)')
+
                 weibo['article_url'] = self._get_article_url(txt_sel)
                 weibo['location'] = self._get_location(txt_sel)
                 if weibo['location']:
                     weibo['text'] = weibo['text'].replace(
                         '2' + weibo['location'], '')
-                weibo['text'] = weibo['text'][2:].replace(' ', '')
+                weibo['text'] = re.sub(r'\s+', ' ', weibo['text'][2:], flags=re.M)
                 if is_long_weibo:
                     weibo['text'] = weibo['text'][:-6]
+                weibo['text'] = weibo['text'].strip()
                 weibo['at_users'] = self._get_at_users(txt_sel)
                 weibo['topics'] = self._get_topics(txt_sel)
 
@@ -169,14 +174,15 @@ class SearchWeiboParser(BaseParser):
                     )[0]
                     retweet['user_id'] = info.xpath('@href')[0].split('/')[-1]
                     retweet['screen_name'] = info.xpath('@nick-name')[0]
-                    retweet['text'] = retweet_txt_sel.xpath('string(.)').replace('\u200b', '').replace('\ue627', '')
+                    retweet['text'] = ' '.join(retweet_txt_sel.xpath('.//text()')).replace('\u200b', '').replace('\ue627', '')
                     retweet['article_url'] = self._get_article_url(retweet_txt_sel)
                     retweet['location'] = self._get_location(retweet_txt_sel)
                     if retweet['location']:
                         retweet['text'] = retweet['text'].replace('2' + retweet['location'], '')
-                    retweet['text'] = retweet['text'][2:].replace(' ', '')
+                    retweet['text'] = re.sub(r'\s+', ' ', retweet['text'][2:], flags=re.M).strip()
                     if is_long_retweet:
                         retweet['text'] = retweet['text'][:-6]
+                    retweet['text'] = retweet['text'].strip()
                     retweet['at_users'] = self._get_at_users(retweet_txt_sel)
                     retweet['topics'] = self._get_topics(retweet_txt_sel)
 

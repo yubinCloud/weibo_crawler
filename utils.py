@@ -18,7 +18,7 @@ def report_log(exception: Exception):
 def handle_garbled(info):
     """处理乱码"""
     try:
-        _info = (info.xpath('string(.)').replace(u'\u200b', '').encode(
+        _info = (' '.join(info.xpath('.//text()')).replace(u'\u200b', '').encode(
             sys.stdout.encoding, 'ignore').decode(sys.stdout.encoding))
         return _info
     except Exception as e:
